@@ -120,11 +120,6 @@ void Tree::compressTraverseWrite(ostream & os, Node* p) {
 			std::memcpy(link, label.c_str(), label.length());
 		} else {
 			link[0] = '+';
-//			if (p->getSibling() != nullptr) {
-//				std::strncpy(link, "                                ", spacing);
-//			} else {
-//				link[0] = '+';
-//			}
 			while (q != nullptr) {
 				if (q->getSibling() != nullptr) {
 					i = spacing*(root->getHeight()+1 - q->getParent()->getHeight());
@@ -160,85 +155,6 @@ void Tree::compressTraverseWrite(ostream & os, Node* p) {
 			compressTraverseWrite(os, p->getSibling());
 	}
 }
-
-//void Tree::compressTraverseWriteOld(ostream & os, Node* p, bool _showAssociations) {
-//	int
-//		spacing;
-//	char
-//		hline = '-',
-//		link[1024],
-//		vline = '|';
-//	if (p != nullptr) {
-//		Node* q = p->getParent();
-//		int startpos = 0, stoppos = 0;
-//		spacing = 3 + labelSpace;
-///* q is the parent. Height of a vertex is the distance from the root as it is scaled
-// * from the time of the vertex, with time(root) = 1 and time(tips) = 1 typically.
-// * Thus we have startpos = q->height and stoppos = p->height.  Let's give that a try...
-// */
-//		bool _debugging(false);
-////		DEBUG(cout << "starting compressTraverseWrite" << endl);
-//		if (p != root) {
-//			startpos = spacing*(root->getHeight()+1 - q->getHeight());
-//			stoppos = spacing*(root->getHeight()+1 - p->getHeight());
-//		}
-//		int i;	// handy counter
-//		for (i = startpos + 1; i <= stoppos; ++i)
-//			treebuf[i] = hline;
-//		std::strncpy(link, "--------------------------------", spacing);
-//		DEBUG(cout << "p = " << p->getLabel() << endl);
-//		DEBUG(if (q != nullptr) { cout << "parent(p) = " << q->getLabel() << endl; } );
-//		if (p->getParent() != nullptr) {
-//			if (p->getParent()->getFirstChild() == p) {	// p is the first child
-//				string label(q->getLabel());
-//				if (_showAssociations && (q->getAssociate() != nullptr)) {
-//					label += ":";
-//					label += q->getAssociate()->getLabel();
-//				}
-//				std::memcpy(link, label.c_str(), label.length());
-//			}
-//		} else {				// p is the last sibling
-//			if (p->getSibling() != nullptr)
-//				std::strncpy(link, "                                ", spacing);
-//			else
-//				link[0] = '+';
-////			DEBUG(cout << "link = " << link << endl);
-//			while (q != nullptr) {
-//				if (q->getSibling() != nullptr) {
-//					i = spacing*(root->getHeight()+1 - q->getParent()->getHeight());
-////					i = spacing*(1 + q->vpar()->height);
-//					treebuf[i++] = vline;
-//					for ( ; i < spacing; i++)
-//						treebuf[i] = ' ';
-//				}
-//				q = q->getParent();
-////				DEBUG(cout << "treebuf = " << treebuf << endl);
-//			}
-//		}
-//		char *ptr = treebuf + (startpos * sizeof(char));
-//		std::strncpy(ptr, link, spacing);
-//		// if p is a leaf then we need to output the line buffer:
-//		if (p->getFirstChild() == nullptr) {
-//			treebuf[spacing*(root->getHeight()+1)] = '\0';
-////			DEBUG(cout << "treebuf = " << treebuf << endl);
-//			string label(p->getLabel());
-//			if (_showAssociations && (p->getAssociate() != nullptr)) {
-//				label += ":";
-//				label += p->getAssociate()->getLabel();
-//			}
-//			os << treebuf << " " << label << "\n";
-//			os.flush();
-//			// we've output the string now, so clear the buffer:
-//			for (i = 0; i < kMediumStringLength; i++)
-//				treebuf[i] = ' ';
-//		} else {
-//			compressTraverseWrite(os, p->getFirstChild(), _showAssociations);
-//		}
-//		if (p->getSibling() != nullptr)
-//			compressTraverseWrite(os, p->getSibling(), _showAssociations);
-//	}
-//}
-
 
 int Tree::getDistUp(Node* lower, Node* upper) {
 	if (distUp.size() == 0) {
@@ -370,21 +286,5 @@ void Tree::setNodeLabel(Node* n, const std::string& newlabel) {
 	n->setLabel(newlabel);
 	V[newlabel] = n;
 }
-
-
-//Node* Tree::lca(set<Node*>& S) {
-//
-//}
-//
-//// @pre V(T) is calculated
-//Node* Tree::lca(set<string>& S) {
-//	// call the Tree::lca(set<Node*>& S)
-//	set<Node*> NodeSet;
-//	for (auto s : S) {
-//		NodeSet.insert(V[s]);
-//	}
-//	return lca(NodeSet);
-//}
-
 
 } /* namespace segdup */

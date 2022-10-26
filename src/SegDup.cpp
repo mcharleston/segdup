@@ -50,56 +50,9 @@ void roughTest() {
 	Node *v = new Node("v");
 	bb->setSibling(v);
 	ba2->setSibling(w);
-//	br->setAssociate(T["r"]);
-//	bx->setAssociate(x);
-//	bc->setAssociate(c);
-//	by->setAssociate(a);
-//	ba1->setAssociate(a);
-//	ba2->setAssociate(a);
-//	bb->setAssociate(b);
 	cout << G1 << endl;
-
-//	Node* g2 = new Node("redRoot");
-//	cout << "all done" << endl;
-//	cout << "depth of node a=" << a->getLabel() << " is " << a->getDepth() << endl;
-//	T.gatherVertices();
-//	for (auto v : T.getVertices()) {
-//		cout << "Vertex " << v.first << " has depth " << v.second->getDepth() << endl;
-//	}
-//	T.compressTraverseWrite(cout);
-
 	G1.compressTraverseWrite(cout);
-//	NodeMap leafAssociation({("a","b")});
-//	CophyMap M(&T, &G1);
-//	M.doPageReconciliation();
-//	nodemap* phi = M.getPhi();
-//	for (auto iter = phi->begin(); iter != phi->end(); ++iter) {
-//		cout << iter->first->getLabel() << "\t->\t" << iter->second.first->getLabel() << ' ';
-//		if (iter->second.second == 0) {
-//			cout << "codivergence";
-//		} else {
-//			cout << "duplication";
-//		}
-//		cout << endl;
-//	}
-	G1.compressTraverseWrite(cout);
-	// TODO Create a reconciliation and count the events on it.
-	// TODO helper methods:
-	// TODO read a Newick format tree?
-//	cout << "Ancestry of nodes:" << endl;
-//	G1.calcAncestry();
-//	for (auto upper : G1.getVertices()) {
-//		cout << "first vertex = " << upper.first << endl;
-//		if (upper.second->isLeaf()) {
-//			continue;
-//		}
-//		for (auto lower : G1.getVertices()) {
-//			cout << "\tsecond vertex = " << lower.first << endl;
-//			if (G1.isAncestralTo(upper.second, lower.second)) {
-//				cout << upper.first << " is ancestral to " << lower.first << " and is " << G1.getDistUp(lower.second, upper.second) << " edge(s) above it" << endl;
-//			}
-//		}
-//	}
+
 	Tree H("(a,(b,c));");
 	H.getRoot()->setLabel("h0");
 	Tree P("(p,(q,r))");

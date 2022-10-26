@@ -71,9 +71,6 @@ public:
 	void setRoot(Node* r) { root = r; }
 	void setShowInfo(bool b) { _showInfo = b; }
 
-//	Node* lca(std::set<Node*>& S);
-//	Node* lca(std::set<std::string>& S);
-
 };
 
 std::ostream& operator<<(std::ostream& os, Tree& T);

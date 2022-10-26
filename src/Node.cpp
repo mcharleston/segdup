@@ -103,26 +103,6 @@ void Node::calcHeight() {
 	}
 }
 
-//Node* Node::preorderNext() {
-//	if (firstChild != nullptr) {
-//		return firstChild;
-//	}
-//	if (sibling != nullptr) {
-//		return sibling;
-//	}
-//
-//}
-//
-//Node* Node::postorderNext() {
-//	if (firstChild != nullptr) {
-//		return firstChild->postorderNext();
-//	}
-//	if (sibling != nullptr) {
-//		return sibling;
-//	}
-//	return this;
-//}
-
 int Node::getDepth() {
 	if (depth < 0) {
 		calcDepth();
@@ -175,9 +155,6 @@ void Node::setFirstChild(Node* c) {
 std::ostream& operator<<(std::ostream& os, Node& n) {
 	if (n.isLeaf()) {
 		os << n.getLabel();
-//		if (n.getAssociate() != nullptr) {
-//			os << "/" << n.getAssociate()->getLabel();
-//		}
 	} else {
 		os << '\"' << n.getLabel() << "\":";
 		os << '(';
@@ -188,9 +165,6 @@ std::ostream& operator<<(std::ostream& os, Node& n) {
 			}
 		}
 		os << ')';
-//		if (n.getAssociate() != nullptr) {
-//			os << "/" << n.getAssociate()->getLabel();
-//		}
 	}
 	return os;
 }

@@ -33,20 +33,6 @@ CophyMap::CophyMap(const CophyMap &other) {
 	phi = other.phi;
 }
 
-//int CophyMap::calcDuplicationHeight(const std::string& hstr) {
-//	// for each parasite / gene on host node with this label, find the maximum run of p->parent->parent... on the same host
-//	Node* h = (*H)[hstr];
-//	return calcDuplicationHeight(h);
-//}
-//int CophyMap::calcDuplicationHeight(Node* h) {
-//	// for each parasite / gene on host node with this label, find the maximum run of p->parent->parent... on the same host
-//	int dupheight(0);
-//	for (auto x : invPhi[h]) {
-//		int dh = 0;
-//		while ()
-//	}
-//}
-
 std::set<Node*> CophyMap::calcAvailableNewHosts(Node* p) {
 	// can go up to same vertex to which parent is mapped, and down to the LCA of there the children are mapped.
 	bool _debugging(true);
@@ -110,17 +96,10 @@ EventCount CophyMap::countEvents() {
 
 void CophyMap::doPageReconciliation() {
 	bool _debugging(false);
-//	phi.clear();
-	// copy the associations from the CophyMap into the associated parasite vertices
-//	for (auto x : phi.getData()) {
-//		x.first->setAssociate(x.second.first);
-//	}
 	DEBUG(cout << "doPageReconciliation" << endl);
 	DEBUG(cout << "Root of associate tree = " << P->getRoot()->getLabel() << endl);
 	for (Node * n = P->getRoot(); n != nullptr; n = n->next()) {
 		if (n->isLeaf()) {
-//			DEBUG(cout << n->getLabel() << endl);
-//			phi[n].first = n->getAssociate();
 			if (getHost(n) != nullptr) { //->getAssociate() != nullptr) {
 				DEBUG(cout << n->getLabel() << " is mapped to " << getHost(n)->getLabel() << endl);
 			}
@@ -151,7 +130,6 @@ void CophyMap::inferEvents(Node *p) {
 	 */
 
 	DEBUG(cout << "Counting events for node " << p->getLabel() << endl);
-//	short event(0);	// 0 for codivergence
 	if (p->getDepth() < 0) {
 		p->calcDepth();
 	}
@@ -167,23 +145,6 @@ void CophyMap::inferEvents(Node *p) {
 	} else {
 		phi[p].second = duplication;
 	}
-//	std::set<Node*> locations;
-//	locations.insert(getHost(p));
-//	Node* child = p->getFirstChild();
-//	uint numLocations(1);
-//	while (child != nullptr) {
-//		// find child location: which child of the host is the most recent lineage on which the child p is
-//		locations.insert(getHost(child));
-//		++numLocations;
-//		child = child->getSibling();
-//	}
-//	if (locations.size() < numLocations) {
-//		// then there are at least two nodes mapped to the same place so this is a duplication
-//		DEBUG(cout << "This is a leaf: no event" << endl);
-//		phi[p].second = duplication;
-//		return;
-//	}
-//	phi[p].second = event;
 	// Now need to check to see if this node is mapped *above* the highest mapped child: this is also a duplication.
 	// XXX did I do the above?
 }
@@ -238,30 +199,7 @@ Node* CophyMap::mapToLCAofChildren(Node* p) {
 		++iter;
 	}
 	phi[p].first = lca;
-//	p->setAssociate(lca);
-//	DEBUG(cout << "\t\t" << phi[p->getFirstChild()].first << endl);
-//	DEBUG(if (lca == nullptr) {
-//		cout << "\t" << p->getFirstChild()->getLabel() << " is not mapped." << endl;
-//		cout << "Checking children..." << endl;
-//	}
-//	);
-//	DEBUG(cout << "Now mapping children of " << p->getLabel() << ":" << endl);
-//	for (Node * c = p->getFirstChild(); c != nullptr; c = c->getSibling()) {
-//		DEBUG(cout << "\tchild = " << c->getLabel() << endl);
-////		lca = H->LCA(lca, mapToLCAofChildren(c));
-//
-//		DEBUG(cout << "\taddress of next child: " << c->getSibling() << endl);
-//	}
-//	DEBUG(cout << "Have mapped children: lca of images is " << lca->getLabel() << endl);
-//	phi[p].first = lca;
-//	p->setAssociate(lca);
 	DEBUG(cout << "Associate " << p->getLabel() << " is mapped to " << lca->getLabel() << endl);
-//	DEBUG(
-//		for (Node * c = p->getFirstChild(); c != nullptr; c = c->getSibling()) {
-//			cout << "\t" << c->getLabel() << " -> " << phi[c].second << endl;
-//		}
-//		cout << "\t" << p->getLabel() << " -> " << lca->getLabel() << endl;
-//	);
 	// now determine the event type:
 	// if all the children of phi[p] are occupied by the children of p then it's a codivergence; else it's duplication.
 	std::set<Node*> occupied;
@@ -307,12 +245,10 @@ void CophyMap::setPhi(string pstr, string hstr) {
 	auto VP = P->getVertices();
 	auto VH = H->getVertices();
 	setPhi(VP[pstr], VH[hstr]);
-//	VP[pstr]->setAssociate(VH[hstr]);
 }
 void CophyMap::setPhi(Node* p, Node* h) {
 	phi[p].first = h;
 	phi[p].second = -1;	// meaning it has to be recalculated
-//	p->setAssociate(h);
 	invPhi[h].insert(p);
 }
 

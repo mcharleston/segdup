@@ -60,7 +60,6 @@ public:
 	void calcDepth();
 	void calcHeight();
 
-//	inline Node* getAssociate() { return associate; }
 	inline double getBranchLength() const { return branchLength; }
 	int getDepth();
 	int getHeight();
@@ -86,14 +85,12 @@ public:
 
 	void putChildren(std::set<Node*>& children);
 
-//	inline void setAssociate(Node* a) { associate = a; }
 	inline void setBranchLength(double d) { branchLength = d; }
 	void setFirstChild(Node* c);
 	inline void setLabel(std::string str) { label = str; }
 	inline void setParent(Node* p) { parent = p; }
 	inline void setSibling(Node* sib) { sibling = sib; sib->parent = parent; }
 	inline void setTree(Tree *tr) { T = tr; }
-//	Node* postorderNext();
 };
 
 std::ostream& operator<<(std::ostream& os, Node& n) ;

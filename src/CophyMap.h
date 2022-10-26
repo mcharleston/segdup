@@ -41,7 +41,6 @@ public:
 	CophyMap(const CophyMap &other);
 
 	std::set<Node*> calcAvailableNewHosts(Node* p);
-//	int calcDuplicationHeight(const std::string& str);
 
 	EventCount countEvents();
 	void doPageReconciliation();
