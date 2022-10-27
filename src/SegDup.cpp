@@ -286,9 +286,19 @@ void testDuplicationHeight() {
 	M2.storeHostInfo();
 	G2.setShowInfo(true);
 	cout << M2 << M2.countEvents() << endl;
+
+	Tree G3("(((c1,d1),((c2,d2),((c3,d3),(c4,d4)))),e)");
+	NodeMap A3(&S, &G3, "c1:C c2:C c3:C c4:C d1:D d2:D d3:D d4:D e:E");
+	CophyMap M3(A3);
+	M3.doPageReconciliation();
+	M3.storeHostInfo();
+	G3.setShowInfo(true);
+	cout << M3 << M3.countEvents() << endl;
+
 	CophyMultiMap CMM;
 	CMM.addCophyMap(&M);
 	CMM.addCophyMap(&M2);
+	CMM.addCophyMap(&M3);
 	int h = CMM.calcDuplicationHeight(S["v4"]);
 	cout << "dh(v4) = " << h << endl;
 	h = CMM.calcDuplicationHeight(S["v3"]);

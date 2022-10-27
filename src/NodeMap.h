@@ -12,13 +12,13 @@
 #include <map>
 #include <set>
 #include <string>
+#include "Node.h"
 
 namespace segdup {
 
-class Node;
 class Tree;
 
-typedef std::pair<Node*, short> associationtype;	// host x association type
+typedef Node* associationtype;	// host x association type
 typedef std::map<Node*, associationtype> nodemaptype;	// parasite x (host x association type)
 typedef std::map<Node*, std::set<associationtype> > wideassociationmap;
 typedef std::map<Node*, std::set<Node*>> inversenodemap;
@@ -52,8 +52,8 @@ public:
 	associationtype& operator[](const std::string& paraLabel);
 	NodeMap& operator=(const NodeMap &other);
 
-	void setPHAssociation(Node* p, Node* h, short a) { data[p] = std::pair<Node*, short>(h, a); }
-	void setPHAssociation(const std::string& pstr, const std::string& hstr, short a);
+	void setPHAssociation(Node* p, Node* h, eventType a) { data[p] = h; p->event = a; }
+	void setPHAssociation(const std::string& pstr, const std::string& hstr, eventType a);
 	void setHostTree(Tree* hptr) { H = hptr; }
 	void setParasiteTree(Tree* pptr) { P = pptr; }
 

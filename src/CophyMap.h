@@ -46,10 +46,10 @@ public:
 	void doPageReconciliation();
 
 	NodeMap& getPhi() { return phi; }
-	Node* getHost(Node* p) { return phi[p].first; }
+	Node* getHost(Node* p) { return phi[p]; }
 	Tree* getHostTree() { return H; }
 	Tree* getParasiteTree() { return P; }
-	short getType(Node* p) { return phi[p].second; }
+	short getType(Node* p) { return p->event; }
 
 	void inferEvents();
 	void inferEvents(Node *p);

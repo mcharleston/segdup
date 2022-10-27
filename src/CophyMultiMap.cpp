@@ -31,7 +31,7 @@ int CophyMultiMap::calcDuplicationHeight(Node *h) {
 	}
 	int dupHeight(0);
 	for (Node* g : invMap[h]) {
-		int height(1);
+		int height = (g->event == duplication) ? 1 : 0;	// this is probably dodgy because it treats "noevent" and "loss" as "codivergence"
 		while (g->getParent() != nullptr) {
 			g = g->getParent();
 			if (invMap[h].count(g) > 0) {
@@ -50,7 +50,7 @@ void CophyMultiMap::calcInverseMap() {
 	for (CophyMap* M : maps) {
 		nodemaptype& phi = M->getPhi().getData();
 		for (auto iter = phi.begin(); iter != phi.end(); ++iter) {
-			invMap[iter->second.first].insert(iter->first);
+			invMap[iter->second].insert(iter->first);
 			// iter is the association, that is, mapping Node* p to pair (Node* h, assoc type).
 		}
 	}

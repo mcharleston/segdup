@@ -29,6 +29,11 @@ enum eventType {
 };
 
 class Node {
+
+	friend class CophyMap;
+	friend class NodeMap;
+	friend class CophyMultiMap;	// so many friends... probably should cut down.
+
 private:
 	std::string label;
 	Node* parent;
@@ -92,6 +97,7 @@ public:
 	inline void setSibling(Node* sib) { sibling = sib; sib->parent = parent; }
 	inline void setTree(Tree *tr) { T = tr; }
 };
+
 
 std::ostream& operator<<(std::ostream& os, Node& n) ;
 

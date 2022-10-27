@@ -134,16 +134,19 @@ void CophyMap::inferEvents(Node *p) {
 		p->calcDepth();
 	}
 	if (p->isLeaf()) {
-		phi[p].second = noevent;
+		p->event = noevent;
 		DEBUG(cout << "This is a leaf: no event" << endl);
 		return;
 	}
-	std::set<Node*> children;
-	p->putChildren(children);
-	if (P->LCA(children) == phi[p].first) {
-		phi[p].second = codivergence;
+	std::set<Node*> pchildren, himages;
+	p->putChildren(pchildren);
+	for (Node* q : pchildren) {
+		himages.insert(phi[q]);
+	}
+	if (H->LCA(himages) == phi[p]) {
+		p->event = codivergence;
 	} else {
-		phi[p].second = duplication;
+		p->event = duplication;
 	}
 	// Now need to check to see if this node is mapped *above* the highest mapped child: this is also a duplication.
 	// XXX did I do the above?
@@ -155,14 +158,14 @@ bool CophyMap::isValid() {
 	// check all nodes in P are mapped to nodes in H
 	Node* image, *childimage;
 	for (Node* n = P->getRoot(); n != nullptr; n = n->next()) {
-		image = phi.at(n).first;
+		image = phi.at(n);
 		if (image->getTree() != H) {
 			cerr << "node n=" << n->getLabel() << " is not mapped to the correct tree " << H->getLabel() << endl;
 			return false;
 		}
 		// check no child node is mapped to a node earlier (closer to the root than) the image of the parent (no time travel!)
 		for (Node* c = n->getFirstChild(); c != nullptr; c = c->getSibling()) {
-			childimage = phi.at(c).first;
+			childimage = phi.at(c);
 			if (H->isAncestralTo(childimage, image)) {
 				cerr << "child node c=" << c->getLabel() << " is mapped ancestrally to its parent n=" << n->getLabel() << endl;
 				return false;
@@ -178,10 +181,10 @@ Node* CophyMap::mapToLCAofChildren(Node* p) {
 	assert(p);	// just check that this pointer isn't null!
 	DEBUG(cout << "mapToLCAofChildren(" << p->getLabel() << ")" << endl);
 	if (p->isLeaf()) {
-		phi[p].second = 0;	// 0 for codivergence normally
+		p->event = codivergence;	// 0 for codivergence normally
 		DEBUG(cout << "This is a leaf: setting image to known associate and returning." << endl);
-		DEBUG(cout << p->getLabel() << " maps to " << phi[p].first->getLabel() << endl);
-		return phi[p].first;	// return the host/species node
+		DEBUG(cout << p->getLabel() << " maps to " << phi[p]->getLabel() << endl);
+		return phi[p];	// return the host/species node
 	}
 	// first, find to which node will p be mapped:
 	assert(p->getFirstChild() != nullptr);
@@ -198,7 +201,7 @@ Node* CophyMap::mapToLCAofChildren(Node* p) {
 		lca = H->LCA(lca, *iter);
 		++iter;
 	}
-	phi[p].first = lca;
+	phi[p] = lca;
 	DEBUG(cout << "Associate " << p->getLabel() << " is mapped to " << lca->getLabel() << endl);
 	// now determine the event type:
 	// if all the children of phi[p] are occupied by the children of p then it's a codivergence; else it's duplication.
@@ -206,10 +209,10 @@ Node* CophyMap::mapToLCAofChildren(Node* p) {
 	uint numChildren(0);
 	for (Node* c = p->getFirstChild(); c != nullptr; c = c->getSibling()) {
 		++numChildren;
-		if (phi[c].first == lca) {
+		if (phi[c] == lca) {
 			break;
 		}
-		Node *h = phi[c].first;
+		Node *h = phi[c];
 		while (h->getParent() != lca) {
 			h = h->getParent();
 			if (h == nullptr) {
@@ -218,8 +221,8 @@ Node* CophyMap::mapToLCAofChildren(Node* p) {
 		}
 		occupied.insert(h);	// this should be a child node from the parent node p
 	}
-	phi[p].second = (numChildren == occupied.size()) ? 0 : 1;	// should generalise to multifurcations
-	DEBUG(cout << p->getLabel() << ':' << phi[p].first->getLabel() << " is an event of type " << phi[p].second << endl);
+	p->event = (numChildren == occupied.size()) ? codivergence : duplication;	// should generalise to multifurcations
+	DEBUG(cout << p->getLabel() << ':' << phi[p]->getLabel() << " is an event of type " << phi[p].second << endl);
 	return lca;
 }
 
@@ -228,8 +231,8 @@ void CophyMap::moveToHost(Node* p, Node *h) {
 		// have to change the host of p stored in p, the nodemap AND the inversenodemap
 		// first remove p from the inverseNodeMap of h:
 		DEBUG(cout << "Moving " << p->getLabel() << " from " << phi[p].first->getLabel() << " to " << h->getLabel() << endl);
-		Node* currentHost = phi[p].first;
-		phi[p].first = h;
+		Node* currentHost = phi[p];
+		phi[p] = h;
 		invPhi[currentHost].erase(p);
 		invPhi[h].insert(p);
 	} catch (const exception& e) {
@@ -247,8 +250,8 @@ void CophyMap::setPhi(string pstr, string hstr) {
 	setPhi(VP[pstr], VH[hstr]);
 }
 void CophyMap::setPhi(Node* p, Node* h) {
-	phi[p].first = h;
-	phi[p].second = -1;	// meaning it has to be recalculated
+	phi[p] = h;
+	p->event = noevent;	// meaning it has to be recalculated
 	invPhi[h].insert(p);
 }
 
@@ -256,8 +259,8 @@ void CophyMap::storeHostInfo() {
 	map<Node*, string>& info = P->getInfo();
 	info.clear();
 	for (auto d : phi.getData()) {
-		info[d.first] = d.second.first->getLabel();
-		cout << d.first->getLabel() << ":" << d.second.first->getLabel() << endl;
+		info[d.first] = d.second->getLabel();
+		cout << d.first->getLabel() << ":" << d.second->getLabel() << endl;
 	}
 }
 

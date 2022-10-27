@@ -13,6 +13,7 @@
 #include <boost/algorithm/string/split.hpp> // Include for boost::split
 
 #include "../utility/debugging.h"
+#include "Node.h"
 #include "NodeMap.h"
 #include "Tree.h"
 
@@ -30,7 +31,8 @@ NodeMap::NodeMap(initializer_list<pair<Node*, Node*>> leaves) {
 		DEBUG(cout << "NodeMap(initializer_list) constructor: setting Host tree = " << H
 				<< " and P = " << P << endl);
 		for (auto phi : leaves) {
-			data[phi.first] = pair<Node*, short>(phi.second, 0);
+			data[phi.first] = phi.second;
+			phi.first->event = noevent;
 		}
 	} catch (const exception& e) {
 		cout << e.what() << endl;
@@ -53,7 +55,8 @@ NodeMap::NodeMap(Tree* inH, Tree* inP, string assocStr) : H(inH), P(inP) {
 		Node* p = (*P)[*sit];
 		++sit;
 		Node* h = (*H)[*sit];
-		data[p] = pair<Node*, short>(h, 0);
+		data[p] = h;
+		p->event = noevent;
 		DEBUG(cout << "parasite " << p->getLabel() << " is on host " << h->getLabel() << endl)
 	}
 }
@@ -63,7 +66,7 @@ NodeMap::~NodeMap() {
 
 Node* NodeMap::getImage(Node* p) {
 	try {
-		return data.at(p).first;
+		return data.at(p);
 	} catch (const exception& e) {
 		cout << e.what();
 		return nullptr;
@@ -72,7 +75,7 @@ Node* NodeMap::getImage(Node* p) {
 
 Node* NodeMap::getImage(const std::string& pLabel) {
 	try {
-		return data.at((*P)[pLabel]).first;
+		return data.at((*P)[pLabel]);
 	} catch (const exception& e) {
 		cout << e.what();
 		return nullptr;
@@ -99,7 +102,7 @@ NodeMap::NodeMap(const NodeMap &other) {
 	P = other.P;	// parasite / gene tree
 }
 
-void NodeMap::setPHAssociation(const std::string& pstr, const std::string& hstr, short a) {
+void NodeMap::setPHAssociation(const std::string& pstr, const std::string& hstr, eventType a) {
 	bool _debugging(false);
 	DEBUG(cout << "setPHAssociation(pstr, hstr, a): P = " << P << "; H = " << H << endl);
 	assert(P != nullptr);
@@ -115,8 +118,8 @@ void NodeMap::setPHAssociation(const std::string& pstr, const std::string& hstr,
 ostream& operator<<(ostream& os, NodeMap& NM) {
 	os << "P -> H" << endl;
 	for (auto d : NM.getData()) {
-		os << d.first->getLabel() << " -> (" << d.second.first->getLabel();
-		os << ',' << d.second.second << ')' << endl;
+		os << d.first->getLabel() << " -> (" << d.second->getLabel();
+		os << ',' << d.second << ')' << endl;
 	}
 	return os;
 }
