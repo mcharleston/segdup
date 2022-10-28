@@ -89,6 +89,7 @@ EventCount CophyMultiMap::countEvents() {
 			if (m.first->hasParent()) {
 				nLosses = H->getDistUp(h, phi[p->getParent()]);
 				nLosses -= (p->getParent()->getEvent() == codivergence) ? 1 : 0;
+				nLosses = max(0, nLosses);
 				E.losses += nLosses;
 				DEBUG(cout << "counting losses leading to " << p->getLabel() << ":"
 						<< h->getLabel() << " -- number of nodes between "

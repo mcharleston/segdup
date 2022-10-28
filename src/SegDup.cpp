@@ -315,7 +315,7 @@ void doTestCase3() {
 	cout << "Gene tree " << G1.getLabel() << endl << G1;
 	cout << "Gene tree " << G2.getLabel() << endl << G2;
 	EventCount E2 = M2.countEvents();
-	cout << "Event counts for " << G2.getLabel() << ":" << endl << E2 << endl;
+//	cout << "Event counts for " << G2.getLabel() << ":" << endl << E2 << endl;
 	CophyMultiMap MCM;
 	MCM.addCophyMap(&M1);
 	MCM.addCophyMap(&M2);
@@ -330,6 +330,7 @@ void doTestCase4() {
 	NodeMap assocs(&S, &G, "a:A b1:B b2:B b3:B c1:C c2:C");
 	CophyMap M(assocs);
 	M.doPageReconciliation();
+	// move first child
 	cout << "Species tree " << S.getLabel() << endl << S;
 	cout << "Gene tree " << G.getLabel() << endl << G;
 	CophyMultiMap MM;
@@ -424,15 +425,17 @@ void doTestCase7() {
 	CophyMultiMap MCM;
 	MCM.addCophyMap(&M1);
 	MCM.addCophyMap(&M2);
+	cout << "G1 = " << endl << G1;
+	cout << "G2 = " << endl << G2;
 	cout << "After standard reconciliation, event counts: " << MCM.countEvents() << endl;
 
 	Node* h = S.LCA(S["A"], S["C"]);
 	Node* p = G1.LCA(G1["a1"], G1["a2"]);
-//	M1.moveToHost(p,h);
-//	M1.inferEvents();
-//	p = G2.LCA(G2["c1"], G2["c2"]);
-//	M2.moveToHost(p,h);
-//	M2.inferEvents();
+	M1.moveToHost(p,h);
+	M1.inferEvents();
+	p = G2.LCA(G2["c1"], G2["c2"]);
+	M2.moveToHost(p,h);
+	M2.inferEvents();
 	cout << "Species tree " << S.getLabel() << endl << S;
 	cout << "Gene tree " << G1.getLabel() << endl << G1;
 	cout << "Gene tree " << G2.getLabel() << endl << G2;
