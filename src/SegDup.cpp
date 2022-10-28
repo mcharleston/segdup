@@ -22,7 +22,7 @@
 using namespace std;
 using namespace segdup;
 
-bool _debugging(false);
+bool _debugging(true);
 bool _silent(false);
 
 void roughTest() {
@@ -57,7 +57,7 @@ void roughTest() {
 	H.getRoot()->setLabel("h0");
 	Tree P("(p,(q,r))");
 	std::map<std::string, Node*>& VH = H.getVertices();
-	std::map<std::string, Node*>& VP = P.getVertices();
+//	std::map<std::string, Node*>& VP = P.getVertices();
 	cout << "Finding a vertex by name: looking for a in V(H) (which should exist):" << endl;
 	cout << VH["a"]->getLabel() << endl;
 	cout << "Did it work?" << endl;
@@ -187,55 +187,6 @@ void testPerfectMatchReconciliation() {
 	cout << "Event counts: " << E << endl;
 }
 
-void ybcTestCases() {
-	string hline("============================================================================\n");
-	cout << "Test case 1 (trivial match)" << endl;
-	Tree T1("(A,(B,C))");
-	Tree S1("(a,(b,c))");
-	T1.setLabel("T1");
-	S1.setLabel("S1");
-	S1.setShowInfo(true);
-	NodeMap assocs1(&T1, &S1, "a:A b:B c:C");
-	CophyMap M1(assocs1);
-	M1.doPageReconciliation();
-	M1.storeHostInfo();
-	cout << M1 << M1.countEvents() << endl << hline;
-
-	cout << "Test case 2:" << endl;
-	Tree S("(A,(B,C))");
-	Tree G("(a1,(a2,((b,c1),c2)))");
-	S.setLabel("S");
-	G.setLabel("G1");
-	cout << S.getLabel() << ":\n" << S << endl;
-	cout << G.getLabel() << ":\n" << G << endl;
-	NodeMap Assocs(&S, &G, "a1:A, a2:A, b:B, c1:C, c2:C");
-	CophyMap M(Assocs);
-	M.doPageReconciliation();
-	G.setShowInfo(true);
-	cout << "G:" << endl << G;
-	EventCount E = M.countEvents();
-	cout << "Event counts: " << E << endl << hline;
-
-	cout << "Test case 3: LCA, 2 gene trees" << endl;
-	Tree G2("((a1,a2),((b,c1),c2)))");
-	G2.setLabel("G2");
-	G2.setShowInfo(true);
-	NodeMap Assocs2(&S, &G2, "a1:A, a2:A, b:B, c1:C, c2:C");
-	CophyMap M2(Assocs2);
-	M2.doPageReconciliation();
-	cout << "Species tree " << S.getLabel() << endl << S;
-	cout << "Gene tree " << G.getLabel() << endl << G;
-	cout << "Gene tree " << G2.getLabel() << endl << G2;
-	EventCount E2 = M2.countEvents();
-	cout << "Event counts for " << G2.getLabel() << ":" << endl << E2 << endl;
-	E += E2;
-	cout << "Total event counts = " << E << endl << hline;
-
-	CophyMultiMap MCM;
-	MCM.addCophyMap(&M);
-	MCM.addCophyMap(&M2);
-}
-
 void testAvailableHosts() {
 	Tree H("(((A,B),C),D)");
 	H.setLabel("H");
@@ -271,14 +222,15 @@ void testAvailableHosts() {
 void testDuplicationHeight() {
 	Tree S("(((A,B),(C,D)),E)");
 	Tree G("((((a1,b1),((a2,b2),(a3,b3))),(((c1,d1),c2),d2)),e)");
-	cout << S;
-	cout << G;
+//	cout << S;
+//	cout << G;
 	NodeMap A1(&S, &G, "a1:A a2:A a3:A b1:B b2:B b3:B c1:C c2:C d1:D d2:D e:E");
 	CophyMap M(A1);
 	M.doPageReconciliation();
 	M.storeHostInfo();
 	G.setShowInfo(true);
-	cout << M << M.countEvents();
+	cout << M << M.countEvents() << endl;
+
 	Tree G2("(((((a1,b1),(a4,b4)),((a2,b2),(a3,b3))),((c1,d1),c2)),e)");
 	NodeMap A2(&S, &G2, "a1:A a2:A a3:A a4:A b1:B b2:B b3:B b4:B c1:C c2:C d1:D e:E");
 	CophyMap M2(A2);
@@ -305,11 +257,202 @@ void testDuplicationHeight() {
 	cout << "dh(v3) = " << h << endl;
 	h = CMM.calcDuplicationHeight(S["v5"]);
 	cout << "dh(v5) = " << h << endl;
+	cout << "Counting events with segmental duplications" << endl << CMM.countEvents() << endl;
 }
 
 void Algorithm1(CophyMultiMap* M) {
 
 }
+
+string hline("============================================================================\n");
+
+void doTestCase1() {
+	cout << "Test case 1 (trivial match)" << endl;
+	Tree T1("(A,(B,C))");
+	Tree S1("(a,(b,c))");
+	T1.setLabel("T1");
+	S1.setLabel("S1");
+	S1.setShowInfo(true);
+	NodeMap assocs1(&T1, &S1, "a:A b:B c:C");
+	CophyMap M1(assocs1);
+	M1.doPageReconciliation();
+	M1.storeHostInfo();
+	cout << M1 << M1.countEvents() << endl << hline;
+}
+void doTestCase2() {
+	cout << "Test case 2:" << endl;
+	Tree S("(A,(B,C))");
+	Tree G("(a1,(a2,((b,c1),c2)))");
+	S.setLabel("S");
+	G.setLabel("G1");
+	cout << S.getLabel() << ":\n" << S << endl;
+	cout << G.getLabel() << ":\n" << G << endl;
+	NodeMap Assocs(&S, &G, "a1:A, a2:A, b:B, c1:C, c2:C");
+	CophyMap M(Assocs);
+	M.doPageReconciliation();
+	G.setShowInfo(true);
+	cout << "G:" << endl << G;
+	EventCount E = M.countEvents();
+	cout << "Event counts: " << E << endl << hline;
+}
+void doTestCase3() {
+	cout << "Test case 3: LCA, 2 gene trees" << endl;
+	Tree S("(A,(B,C))");
+	S.setLabel("S");
+	Tree G1("(a,(b1,((b2,c1),c2)))");
+	Tree G2("((a1,a2),((b,c1),c2)))");
+	G1.setLabel("G1");
+	G1.setShowInfo(true);
+	G2.setLabel("G2");
+	G2.setShowInfo(true);
+	NodeMap Assocs1(&S, &G1, "a:A b1:B b2:B c1:C c2:C");
+	CophyMap M1(Assocs1);
+	M1.doPageReconciliation();
+	NodeMap Assocs2(&S, &G2, "a1:A, a2:A, b:B, c1:C, c2:C");
+	CophyMap M2(Assocs2);
+	M2.doPageReconciliation();
+	cout << "Species tree " << S.getLabel() << endl << S;
+	cout << "Gene tree " << G1.getLabel() << endl << G1;
+	cout << "Gene tree " << G2.getLabel() << endl << G2;
+	EventCount E2 = M2.countEvents();
+	cout << "Event counts for " << G2.getLabel() << ":" << endl << E2 << endl;
+	CophyMultiMap MCM;
+	MCM.addCophyMap(&M1);
+	MCM.addCophyMap(&M2);
+	cout << " Test case 3 event counts: " << MCM.countEvents() << endl << hline;
+}
+void doTestCase4() {
+	cout << "Test case 4: Not LCA, 1 gene tree" << endl;
+	Tree S("(A,(B,C))");
+	Tree G("(a,((b1,b2),((b3,c1),c2)))");
+	G.setLabel("G");
+	G.setShowInfo(true);
+	NodeMap assocs(&S, &G, "a:A b1:B b2:B b3:B c1:C c2:C");
+	CophyMap M(assocs);
+	M.doPageReconciliation();
+	cout << "Species tree " << S.getLabel() << endl << S;
+	cout << "Gene tree " << G.getLabel() << endl << G;
+	CophyMultiMap MM;
+	MM.addCophyMap(&M);
+	cout << "Test case 4 event counts: " << MM.countEvents() << endl << hline;
+}
+void doTestCase5() {
+	cout << "Test case 5: Not LCA, 2 gene trees" << endl;
+	Tree S("(A,(B,C))");
+	S.setLabel("S");
+	Tree G1("(a,(b1,b2))");
+	Tree G2("(a,(c1,c2))");
+	G1.setLabel("G1");
+	G1.setShowInfo(true);
+	G2.setLabel("G2");
+	G2.setShowInfo(true);
+	NodeMap Assocs1(&S, &G1, "a:A b1:B b2:B");
+	CophyMap M1(Assocs1);
+	M1.doPageReconciliation();
+	Node* h = S.LCA(S["B"], S["C"]);
+	Node* p = G1.LCA(G1["b1"], G1["b2"]);
+	M1.moveToHost(p,h);
+	M1.inferEvents();
+	NodeMap Assocs2(&S, &G2, "a:A c1:C c2:C");
+	CophyMap M2(Assocs2);
+	M2.doPageReconciliation();
+	p = G2.LCA(G2["c1"], G2["c2"]);
+	M2.moveToHost(p,h);
+	M2.inferEvents();
+	cout << "Species tree " << S.getLabel() << endl << S;
+	cout << "Gene tree " << G1.getLabel() << endl << G1;
+	cout << "Gene tree " << G2.getLabel() << endl << G2;
+	EventCount E2 = M2.countEvents();
+	cout << "Event counts for " << G2.getLabel() << ":" << endl << E2 << endl;
+	CophyMultiMap MCM;
+	MCM.addCophyMap(&M1);
+	MCM.addCophyMap(&M2);
+	cout << " Test case 5 event counts: " << MCM.countEvents() << endl << hline;
+}
+void doTestCase6() {
+	cout << "Test case 6: Not LCA, 2 gene trees" << endl;
+	Tree S("(A,(B,C))");
+	S.setLabel("S");
+	Tree G1("(a1,a2)");
+	Tree G2("(c1,c2)");
+	G1.setLabel("G1");
+	G1.setShowInfo(true);
+	G2.setLabel("G2");
+	G2.setShowInfo(true);
+	NodeMap Assocs1(&S, &G1, "a1:A a2:A");
+	CophyMap M1(Assocs1);
+	M1.doPageReconciliation();
+	Node* h = S.LCA(S["A"], S["C"]);
+	Node* p = G1.LCA(G1["a1"], G1["a2"]);
+	M1.moveToHost(p,h);
+	M1.inferEvents();
+	NodeMap Assocs2(&S, &G2, "c1:C c2:C");
+	CophyMap M2(Assocs2);
+	M2.doPageReconciliation();
+	p = G2.LCA(G2["c1"], G2["c2"]);
+	M2.moveToHost(p,h);
+	M2.inferEvents();
+	cout << "Species tree " << S.getLabel() << endl << S;
+	cout << "Gene tree " << G1.getLabel() << endl << G1;
+	cout << "Gene tree " << G2.getLabel() << endl << G2;
+	EventCount E2 = M2.countEvents();
+	cout << "Event counts for " << G2.getLabel() << ":" << endl << E2 << endl;
+	CophyMultiMap MCM;
+	MCM.addCophyMap(&M1);
+	MCM.addCophyMap(&M2);
+	cout << " Test case 6 event counts: " << MCM.countEvents() << endl << hline;
+}
+void doTestCase7() {
+	cout << "Test case 7: a bit more complicated (in progress)" << endl;
+	Tree S("(A,(B,C))");
+	S.setLabel("S");
+	Tree G1("(a1,((a2,(b,c1)), c2))");
+	Tree G2("(a,(c1,(c2,c3)))");
+	G1.setLabel("G1");
+	G1.setShowInfo(true);
+	G2.setLabel("G2");
+	G2.setShowInfo(true);
+	cout << G1 << G2 << endl;
+	NodeMap Assocs1(&S, &G1, "a1:A a2:A b:B c1:C c2:C");
+	CophyMap M1(Assocs1);
+	M1.doPageReconciliation();
+	M1.inferEvents();
+	NodeMap Assocs2(&S, &G2, "a:A c1:C c2:C c3:C");
+	CophyMap M2(Assocs2);
+	M2.doPageReconciliation();
+	M2.inferEvents();
+	CophyMultiMap MCM;
+	MCM.addCophyMap(&M1);
+	MCM.addCophyMap(&M2);
+	cout << "After standard reconciliation, event counts: " << MCM.countEvents() << endl;
+
+	Node* h = S.LCA(S["A"], S["C"]);
+	Node* p = G1.LCA(G1["a1"], G1["a2"]);
+//	M1.moveToHost(p,h);
+//	M1.inferEvents();
+//	p = G2.LCA(G2["c1"], G2["c2"]);
+//	M2.moveToHost(p,h);
+//	M2.inferEvents();
+	cout << "Species tree " << S.getLabel() << endl << S;
+	cout << "Gene tree " << G1.getLabel() << endl << G1;
+	cout << "Gene tree " << G2.getLabel() << endl << G2;
+	EventCount E2 = M2.countEvents();
+	cout << "Event counts for " << G2.getLabel() << ":" << endl << E2 << endl;
+	cout << " Test case 7 event counts: " << MCM.countEvents() << endl << hline;
+}
+void ybcTestCases() {
+	doTestCase1();
+	doTestCase2();
+	doTestCase3();
+	doTestCase4();
+	doTestCase5();
+	doTestCase6();
+	doTestCase7();
+
+//	cout << "Total event counts = " << E << endl << hline;
+
+}
+
 
 /**
  * TODO count events on a single cophymap XXX test
@@ -325,8 +468,8 @@ int main(int argc, char** argv) {
 //	testPageReconciliation3();
 //	testPerfectMatchReconciliation();
 //	testAvailableHosts();
-	testDuplicationHeight();
-//	ybcTestCases();
+//	testDuplicationHeight();
+	ybcTestCases();
 
 	return 0;
 }

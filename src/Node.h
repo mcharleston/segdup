@@ -67,6 +67,7 @@ public:
 
 	inline double getBranchLength() const { return branchLength; }
 	int getDepth();
+	inline eventType& getEvent() { return event; }
 	int getHeight();
 	inline const std::string& getLabel() const { return label; }
 	inline Node* getFirstChild() { return firstChild; }

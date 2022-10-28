@@ -5,9 +5,12 @@
  *      Author: mac
  */
 
+#include "../utility/debugging.h"
 #include "CophyMultiMap.h"
 
 using namespace std;
+
+extern bool _debugging;
 
 namespace segdup {
 
@@ -57,11 +60,53 @@ void CophyMultiMap::calcInverseMap() {
 }
 
 EventCount CophyMultiMap::countEvents() {
-	EventCount EC;
-	for (CophyMap *Phi : maps) {
-		EC += Phi->countEvents();
+	/**
+	 *
+	 */
+	bool _debugging(true);
+	EventCount E;
+	Tree *H;
+	Node *p, *h;
+	int nLosses;
+	for (CophyMap* M : maps) {
+		NodeMap& phi = M->getPhi();
+		// Count duplications and losses for separate maps:
+		H = phi.getHostTree();
+		for (auto m : phi.getData()) {
+			p = m.first;
+			h = m.second;
+	//		E.codivs += (m.second.second == 0);	// m is of form (p, (h, type))
+	//		E.dups += (m.second.second == 1);
+			if (m.first->isLeaf()) {
+				DEBUG(cout << p->getLabel() << " is a leaf: do not count duplication or codivergence events!" << endl);
+			} else {
+				if (p->getEvent() == codivergence) {
+					++E.codivs;
+					DEBUG(cout << "counting events for " << p->getLabel() << ':' << h->getLabel() << ": this is a ");
+					DEBUG(cout << "CODIVERGENCE" << endl);
+				}
+			}
+			if (m.first->hasParent()) {
+				nLosses = H->getDistUp(h, phi[p->getParent()]);
+				nLosses -= (p->getParent()->getEvent() == codivergence) ? 1 : 0;
+				E.losses += nLosses;
+				DEBUG(cout << "counting losses leading to " << p->getLabel() << ":"
+						<< h->getLabel() << " -- number of nodes between "
+						<< h->getLabel() << " and "
+						<< h->getParent()->getLabel()
+						<< " is " << H->getDistUp(h, phi[p->getParent()])
+						<< endl);
+				DEBUG(cout << "\tadding " << nLosses << " losses." << endl);
+					// if the parent is mapped to a codivergence event then don't count that node as a loss!
+			}
+		}
 	}
-	return EC;
+	// now count segmental duplications (which may be shared by multiple tree-maps):
+	map<string, Node*>& V = H->getVertices();
+	for (auto iter : V) {
+		E.dups += calcDuplicationHeight(iter.second);
+	}
+	return E;
 }
 
 void CophyMultiMap::doPageReconciliation() {

@@ -59,20 +59,22 @@ std::set<Node*> CophyMap::calcAvailableNewHosts(Node* p) {
 }
 
 // Recall:
-// typedef std::pair<Node*, short> associationtype;	// host x association type
-// typedef std::map<Node*, associationtype> nodemaptype;	// parasite x (host x association type)
+//typedef Node* associationtype;	// host x association type
+//typedef std::map<Node*, associationtype> nodemaptype;	// parasite x (host x association type)
+//typedef std::map<Node*, std::set<associationtype> > wideassociationmap;
+//typedef std::map<Node*, std::set<Node*>> inversenodemap;
 
 EventCount CophyMap::countEvents() {
 	EventCount E;
-	bool _debugging(true);
+	bool _debugging(false);
 	for (auto m : phi.getData()) {
 //		E.codivs += (m.second.second == 0);	// m is of form (p, (h, type))
 //		E.dups += (m.second.second == 1);
 		if (m.first->isLeaf()) {
 			DEBUG(cout << m.first->getLabel() << " is a leaf: do not count duplication or codivergence events!" << endl);
 		} else {
-			DEBUG(cout << "counting events for " << m.first->getLabel() << ':' << m.second.first->getLabel() << ": this is a ");
-			if (getType(m.first) == 0) {
+			DEBUG(cout << "counting events for " << m.first->getLabel() << ':' << m.second->getLabel() << ": this is a ");
+			if (getType(m.first) == codivergence) {
 				++E.codivs;
 				DEBUG(cout << "CODIVERGENCE" << endl);
 			} else {
@@ -107,6 +109,7 @@ void CophyMap::doPageReconciliation() {
 	}
 	Node* p = P->getRoot();	// root of the parasite / gene tree
 	mapToLCAofChildren(p);
+	storeHostInfo();
 	DEBUG(cout << "reconciliation is done" << endl);
 }
 
@@ -222,7 +225,7 @@ Node* CophyMap::mapToLCAofChildren(Node* p) {
 		occupied.insert(h);	// this should be a child node from the parent node p
 	}
 	p->event = (numChildren == occupied.size()) ? codivergence : duplication;	// should generalise to multifurcations
-	DEBUG(cout << p->getLabel() << ':' << phi[p]->getLabel() << " is an event of type " << phi[p].second << endl);
+	DEBUG(cout << p->getLabel() << ':' << phi[p]->getLabel() << " is an event of type " << p->getEvent() << endl);
 	return lca;
 }
 
@@ -230,11 +233,12 @@ void CophyMap::moveToHost(Node* p, Node *h) {
 	try {
 		// have to change the host of p stored in p, the nodemap AND the inversenodemap
 		// first remove p from the inverseNodeMap of h:
-		DEBUG(cout << "Moving " << p->getLabel() << " from " << phi[p].first->getLabel() << " to " << h->getLabel() << endl);
+		DEBUG(cout << "Moving " << p->getLabel() << " from " << phi[p]->getLabel() << " to " << h->getLabel() << endl);
 		Node* currentHost = phi[p];
 		phi[p] = h;
 		invPhi[currentHost].erase(p);
 		invPhi[h].insert(p);
+		P->getInfo().at(p) = h->getLabel();
 	} catch (const exception& e) {
 		cout << e.what();
 	}
@@ -256,11 +260,12 @@ void CophyMap::setPhi(Node* p, Node* h) {
 }
 
 void CophyMap::storeHostInfo() {
+	bool _debugging(false);
 	map<Node*, string>& info = P->getInfo();
 	info.clear();
 	for (auto d : phi.getData()) {
 		info[d.first] = d.second->getLabel();
-		cout << d.first->getLabel() << ":" << d.second->getLabel() << endl;
+		DEBUG(cout << d.first->getLabel() << ":" << d.second->getLabel() << endl);
 	}
 }
 

@@ -15,11 +15,10 @@ namespace segdup {
 
 class EventCount {
 	friend class CophyMap;
-private:
+public:
 	int codivs;
 	int dups;
 	int losses;
-public:
 	EventCount() : codivs(0), dups(0), losses(0) {}
 	virtual ~EventCount();
 	EventCount(const EventCount &other);

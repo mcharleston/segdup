@@ -28,7 +28,7 @@ Tree::Tree(std::string str) : root(nullptr), labelSpace(0), numVertices(-1) {
 		istringstream instr(str);
 		TL.tokenize(instr);
 		parsing::SegDupParser p(TL);
-		root = new Node("root");
+		root = new Node("*");
 		TL.reset();
 		numVertices = 1;
 		p.parseNewickSubtree(root);
@@ -112,7 +112,11 @@ void Tree::compressTraverseWrite(ostream & os, Node* p) {
 		DEBUG(if (q != nullptr) { cout << "parent(p) = " << q->getLabel() << endl; } );
 
 		if (p->isFirstChild()) {
-			label = q->getLabel();
+			label = "";
+			if (_showInfo && info.count(p) > 0) {
+				label = (p->getEvent() == codivergence) ? "[*]" : "[o]";
+			}
+			label += q->getLabel();
 			if (_showInfo && (info.count(q) > 0)) {
 				label += ":";
 				label += info.at(q);
@@ -175,7 +179,7 @@ void Tree::gatherVertices() {
 int Tree::getMaxLabelWidth(Node *v) {
 	int length = v->getLabel().length();
 	if (_showInfo && (info.count(v) > 0)) {
-		length += 1 + info.at(v).length();
+		length += 4 + info.at(v).length();
 	}
 	Node* child = v->getFirstChild();
 	while (child != nullptr) {
