@@ -120,6 +120,7 @@ void CophyMap::inferEvents() {
 }
 
 void CophyMap::inferEvents(Node *p) {
+	bool _debugging(true);
 	/**
 	 * If this is a leaf, then no event
 	 * Else, this node has children: if they are both mapped to the same node in S, this must be a duplication;
@@ -132,7 +133,7 @@ void CophyMap::inferEvents(Node *p) {
 	 * 	2.2
 	 */
 
-	DEBUG(cout << "Counting events for node " << p->getLabel() << endl);
+	DEBUG(cout << "Counting events for node " << p->getLabel() << ":" << phi[p]->getLabel() << endl);
 	if (p->getDepth() < 0) {
 		p->calcDepth();
 	}
@@ -146,11 +147,14 @@ void CophyMap::inferEvents(Node *p) {
 	for (Node* q : pchildren) {
 		himages.insert(phi[q]);
 	}
-	if (H->LCA(himages) == phi[p]) {
+	DEBUG(cout << "\tHosts of children: { "; for (Node* hc : himages) cout << hc->getLabel() << " "; cout << "}" << endl );
+	DEBUG(cout << "\tLCA(<children>) = " << H->LCA(himages)->getLabel() << "; phi[p] = " << phi[p]->getLabel() << endl);
+	if ((H->LCA(himages) == phi[p]) && (himages.count(phi[p]) == 0)) {
 		p->event = codivergence;
 	} else {
 		p->event = duplication;
 	}
+	DEBUG(cout << "\tEvent for node " << p->getLabel() << " is " << p->describeEvent() << endl);
 	// Now need to check to see if this node is mapped *above* the highest mapped child: this is also a duplication.
 	// XXX did I do the above?
 }
@@ -184,7 +188,7 @@ Node* CophyMap::mapToLCAofChildren(Node* p) {
 	assert(p);	// just check that this pointer isn't null!
 	DEBUG(cout << "mapToLCAofChildren(" << p->getLabel() << ")" << endl);
 	if (p->isLeaf()) {
-		p->event = codivergence;	// 0 for codivergence normally
+//		p->event = codivergence;	// 0 for codivergence normally
 		DEBUG(cout << "This is a leaf: setting image to known associate and returning." << endl);
 		DEBUG(cout << p->getLabel() << " maps to " << phi[p]->getLabel() << endl);
 		return phi[p];	// return the host/species node
@@ -224,7 +228,7 @@ Node* CophyMap::mapToLCAofChildren(Node* p) {
 		}
 		occupied.insert(h);	// this should be a child node from the parent node p
 	}
-	p->event = (numChildren == occupied.size()) ? codivergence : duplication;	// should generalise to multifurcations
+//	p->event = (numChildren == occupied.size()) ? codivergence : duplication;	// should generalise to multifurcations
 	DEBUG(cout << p->getLabel() << ':' << phi[p]->getLabel() << " is an event of type " << p->getEvent() << endl);
 	return lca;
 }

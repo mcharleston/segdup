@@ -63,7 +63,7 @@ EventCount CophyMultiMap::countEvents() {
 	/**
 	 *
 	 */
-	bool _debugging(true);
+	bool _debugging(false);
 	EventCount E;
 	Tree *H;
 	Node *p, *h;

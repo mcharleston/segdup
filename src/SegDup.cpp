@@ -301,20 +301,22 @@ void doTestCase3() {
 	S.setLabel("S");
 	Tree G1("(a,(b1,((b2,c1),c2)))");
 	Tree G2("((a1,a2),((b,c1),c2)))");
-	G1.setLabel("G1");
+	G1.setLabel("BLUE");
 	G1.setShowInfo(true);
-	G2.setLabel("G2");
+	G2.setLabel("GREEN");
 	G2.setShowInfo(true);
 	NodeMap Assocs1(&S, &G1, "a:A b1:B b2:B c1:C c2:C");
 	CophyMap M1(Assocs1);
 	M1.doPageReconciliation();
+	M1.inferEvents();
 	NodeMap Assocs2(&S, &G2, "a1:A, a2:A, b:B, c1:C, c2:C");
 	CophyMap M2(Assocs2);
 	M2.doPageReconciliation();
+	M2.inferEvents();
 	cout << "Species tree " << S.getLabel() << endl << S;
 	cout << "Gene tree " << G1.getLabel() << endl << G1;
 	cout << "Gene tree " << G2.getLabel() << endl << G2;
-	EventCount E2 = M2.countEvents();
+//	EventCount E2 = M2.countEvents();
 //	cout << "Event counts for " << G2.getLabel() << ":" << endl << E2 << endl;
 	CophyMultiMap MCM;
 	MCM.addCophyMap(&M1);
@@ -444,13 +446,13 @@ void doTestCase7() {
 	cout << " Test case 7 event counts: " << MCM.countEvents() << endl << hline;
 }
 void ybcTestCases() {
-	doTestCase1();
-	doTestCase2();
+//	doTestCase1();
+//	doTestCase2();
 	doTestCase3();
-	doTestCase4();
-	doTestCase5();
-	doTestCase6();
-	doTestCase7();
+//	doTestCase4();
+//	doTestCase5();
+//	doTestCase6();
+//	doTestCase7();
 
 //	cout << "Total event counts = " << E << endl << hline;
 

@@ -65,6 +65,8 @@ public:
 	void calcDepth();
 	void calcHeight();
 
+	std::string describeEvent();
+
 	inline double getBranchLength() const { return branchLength; }
 	int getDepth();
 	inline eventType& getEvent() { return event; }
