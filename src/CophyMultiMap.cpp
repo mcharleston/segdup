@@ -29,22 +29,31 @@ int CophyMultiMap::calcDuplicationHeight(Node *h) {
 	 * For each, calculate the height of each gene subtree that is mapped to h
 	 * The duplication height is the maximum of these.
 	 */
+	bool _debugging(true);
+	DEBUG(cout << "Calculating duplication height for host node " << h->getLabel() << endl);
 	if (invMap.size() == 0) {
+		DEBUG(cout << "calculating inverse map since it is empty" << endl);
 		calcInverseMap();
 	}
 	int dupHeight(0);
-	for (Node* g : invMap[h]) {
-		int height = (g->event == duplication) ? 1 : 0;	// this is probably dodgy because it treats "noevent" and "loss" as "codivergence"
-		while (g->getParent() != nullptr) {
-			g = g->getParent();
-			if (invMap[h].count(g) > 0) {
+	for (Node* p : invMap[h]) {
+		DEBUG(cout << "\tp = " << p->getLabel() << " is on the host" << endl);
+		int height = (p->event == duplication) ? 1 : 0;	// this is probably dodgy because it treats "noevent" and "loss" as "codivergence"
+		DEBUG(cout << "\tinitial height for this lineage is " << height << endl);
+		dupHeight = height;
+		while (p->getParent() != nullptr) {
+			p = p->getParent();
+			if (invMap[h].count(p) > 0) {
 				++height;
 			} else {
 				dupHeight = max<int>(dupHeight, height);
+				DEBUG(cout << "\theight for this p = " << height << endl);
+				DEBUG(cout << "\tdupHeight = " << dupHeight << endl);
 				break;
 			}
 		}
 	}
+	DEBUG(cout << "\tduplication height is " << dupHeight << endl);
 	return dupHeight;
 }
 
@@ -63,7 +72,7 @@ EventCount CophyMultiMap::countEvents() {
 	/**
 	 *
 	 */
-	bool _debugging(false);
+	bool _debugging(true);
 	EventCount E;
 	Tree *H;
 	Node *p, *h;
@@ -93,12 +102,14 @@ EventCount CophyMultiMap::countEvents() {
 				E.losses += nLosses;
 				DEBUG(cout << "counting losses leading to " << p->getLabel() << ":"
 						<< h->getLabel() << " -- number of nodes between "
-						<< h->getLabel() << " and "
-						<< h->getParent()->getLabel()
+						<< h->getParent()->getLabel() << " and "
+						<< h->getLabel()
 						<< " is " << H->getDistUp(h, phi[p->getParent()])
 						<< endl);
 				DEBUG(cout << "\tadding " << nLosses << " losses." << endl);
 					// if the parent is mapped to a codivergence event then don't count that node as a loss!
+			} else {
+				E.losses += calcDuplicationHeight(m.second);
 			}
 		}
 	}

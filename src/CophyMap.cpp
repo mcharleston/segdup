@@ -84,8 +84,8 @@ EventCount CophyMap::countEvents() {
 		}
 		if (m.first->hasParent()) {
 			DEBUG(cout << "counting losses : number of nodes between "
-					<< getHost(m.first)->getLabel() << " and "
-					<< getHost(m.first->getParent())->getLabel()
+					<< getHost(m.first->getParent())->getLabel() << " and "
+					<< getHost(m.first)->getLabel()
 					<< " is " << H->getDistUp(getHost(m.first), getHost(m.first->getParent()))
 					<< endl);
 			E.losses += H->getDistUp(getHost(m.first), getHost(m.first->getParent()));

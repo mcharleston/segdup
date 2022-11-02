@@ -276,6 +276,7 @@ void doTestCase1() {
 	NodeMap assocs1(&T1, &S1, "a:A b:B c:C");
 	CophyMap M1(assocs1);
 	M1.doPageReconciliation();
+	M1.inferEvents();
 	M1.storeHostInfo();
 	cout << M1 << M1.countEvents() << endl << hline;
 }
@@ -290,6 +291,8 @@ void doTestCase2() {
 	NodeMap Assocs(&S, &G, "a1:A, a2:A, b:B, c1:C, c2:C");
 	CophyMap M(Assocs);
 	M.doPageReconciliation();
+	M.inferEvents();
+	M.storeHostInfo();
 	G.setShowInfo(true);
 	cout << "G:" << endl << G;
 	EventCount E = M.countEvents();
@@ -332,12 +335,16 @@ void doTestCase4() {
 	NodeMap assocs(&S, &G, "a:A b1:B b2:B b3:B c1:C c2:C");
 	CophyMap M(assocs);
 	M.doPageReconciliation();
+	Node* p = G.LCA(G["b1"], G["b2"]);
+	Node* newHost = S.LCA(S["B"], S["C"]);
+	M.moveToHost(p, newHost);
+	M.inferEvents();
 	// move first child
 	cout << "Species tree " << S.getLabel() << endl << S;
 	cout << "Gene tree " << G.getLabel() << endl << G;
 	CophyMultiMap MM;
 	MM.addCophyMap(&M);
-	cout << "Test case 4 event counts: " << MM.countEvents() << endl << hline;
+	cout << "Test case 4 event counts:\n" << MM.countEvents() << endl << hline;
 }
 void doTestCase5() {
 	cout << "Test case 5: Not LCA, 2 gene trees" << endl;
@@ -448,10 +455,10 @@ void doTestCase7() {
 void ybcTestCases() {
 //	doTestCase1();
 //	doTestCase2();
-	doTestCase3();
+//	doTestCase3();
 //	doTestCase4();
 //	doTestCase5();
-//	doTestCase6();
+	doTestCase6();
 //	doTestCase7();
 
 //	cout << "Total event counts = " << E << endl << hline;

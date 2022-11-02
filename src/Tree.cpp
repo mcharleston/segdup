@@ -113,8 +113,8 @@ void Tree::compressTraverseWrite(ostream & os, Node* p) {
 
 		if (p->isFirstChild()) {
 			label = "";
-			if (_showInfo && info.count(p) > 0) {
-				label = (p->getEvent() == codivergence) ? "[<]" : "[=]";
+			if (_showInfo && info.count(q) > 0) {
+				label = (q->getEvent() == codivergence) ? "[<]" : "[=]";
 			}
 			label += q->getLabel();
 			if (_showInfo && (info.count(q) > 0)) {
