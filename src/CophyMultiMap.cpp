@@ -14,44 +14,36 @@ extern bool _debugging;
 
 namespace segdup {
 
-CophyMultiMap::CophyMultiMap() {
-	// TODO Auto-generated constructor stub
-
-}
-
-CophyMultiMap::~CophyMultiMap() {
-	// TODO Auto-generated destructor stub
-}
-
 int CophyMultiMap::calcDuplicationHeight(Node *h) {
 	/**
 	 * Find each node in each parasite/gene tree mapped to node h.
 	 * For each, calculate the height of each gene subtree that is mapped to h
 	 * The duplication height is the maximum of these.
 	 */
-	bool _debugging(true);
+	bool _debugging(false);
 	DEBUG(cout << "Calculating duplication height for host node " << h->getLabel() << endl);
-	if (invMap.size() == 0) {
-		DEBUG(cout << "calculating inverse map since it is empty" << endl);
-		calcInverseMap();
-	}
+//	if (invMap.size() == 0) {
+//		DEBUG(cout << "calculating inverse map since it is empty" << endl);
+		calcInverseMap();	// TODO find out why this isn't being updated properly by moving p-nodes around.
+		// XXX I've turned OFF the test to see if the invMap.size() is zero and it SEEMS to be working.. (MAC 2022/12/05)
+//	}
 	int dupHeight(0);
 	for (Node* p : invMap[h]) {
-		DEBUG(cout << "\tp = " << p->getLabel() << " is on the host" << endl);
-		int height = (p->event == duplication) ? 1 : 0;	// this is probably dodgy because it treats "noevent" and "loss" as "codivergence"
+		DEBUG(cout << p->getLabel() << " is on host " << h->getLabel() << endl);
+		CophyMap* M = maps[p->getTree()];
+		int height = (M->getEvent(p) == duplication) ? 1 : 0;	// this is probably dodgy because it treats "noevent" and "loss" as "codivergence"
 		DEBUG(cout << "\tinitial height for this lineage is " << height << endl);
-		dupHeight = height;
 		while (p->getParent() != nullptr) {
 			p = p->getParent();
 			if (invMap[h].count(p) > 0) {
 				++height;
 			} else {
-				dupHeight = max<int>(dupHeight, height);
 				DEBUG(cout << "\theight for this p = " << height << endl);
 				DEBUG(cout << "\tdupHeight = " << dupHeight << endl);
 				break;
 			}
 		}
+		dupHeight = max<int>(dupHeight, height);
 	}
 	DEBUG(cout << "\tduplication height is " << dupHeight << endl);
 	return dupHeight;
@@ -59,7 +51,8 @@ int CophyMultiMap::calcDuplicationHeight(Node *h) {
 
 void CophyMultiMap::calcInverseMap() {
 	invMap.clear();
-	for (CophyMap* M : maps) {
+	for (auto mpr : maps) {
+		CophyMap* M = mpr.second;
 		nodemaptype& phi = M->getPhi().getData();
 		for (auto iter = phi.begin(); iter != phi.end(); ++iter) {
 			invMap[iter->second].insert(iter->first);
@@ -68,16 +61,25 @@ void CophyMultiMap::calcInverseMap() {
 	}
 }
 
+void CophyMultiMap::clear() {
+	maps.clear();
+	invMap.clear();
+	duplicationCost = defDuplicationCost;
+	lossCost = defLossCost;
+}
+
 EventCount CophyMultiMap::countEvents() {
 	/**
 	 *
 	 */
-	bool _debugging(true);
+	bool _debugging(false);
 	EventCount E;
 	Tree *H;
 	Node *p, *h;
 	int nLosses;
-	for (CophyMap* M : maps) {
+	DEBUG(cout << "CophyMultiMap:countEvents()\n");
+	for (auto mpr : maps) {
+		CophyMap* M = mpr.second;
 		NodeMap& phi = M->getPhi();
 		// Count duplications and losses for separate maps:
 		H = phi.getHostTree();
@@ -89,7 +91,7 @@ EventCount CophyMultiMap::countEvents() {
 			if (m.first->isLeaf()) {
 				DEBUG(cout << p->getLabel() << " is a leaf: do not count duplication or codivergence events!" << endl);
 			} else {
-				if (p->getEvent() == codivergence) {
+				if (M->getEvent(p) == codivergence) {
 					++E.codivs;
 					DEBUG(cout << "counting events for " << p->getLabel() << ':' << h->getLabel() << ": this is a ");
 					DEBUG(cout << "CODIVERGENCE" << endl);
@@ -97,7 +99,7 @@ EventCount CophyMultiMap::countEvents() {
 			}
 			if (m.first->hasParent()) {
 				nLosses = H->getDistUp(h, phi[p->getParent()]);
-				nLosses -= (p->getParent()->getEvent() == codivergence) ? 1 : 0;
+				nLosses -= (M->getEvent(p->getParent()) == codivergence) ? 1 : 0;
 				nLosses = max(0, nLosses);
 				E.losses += nLosses;
 				DEBUG(cout << "counting losses leading to " << p->getLabel() << ":"
@@ -109,22 +111,48 @@ EventCount CophyMultiMap::countEvents() {
 				DEBUG(cout << "\tadding " << nLosses << " losses." << endl);
 					// if the parent is mapped to a codivergence event then don't count that node as a loss!
 			} else {
-				E.losses += calcDuplicationHeight(m.second);
+//				E.losses += calcDuplicationHeight(m.second);
 			}
 		}
 	}
 	// now count segmental duplications (which may be shared by multiple tree-maps):
 	map<string, Node*>& V = H->getVertices();
+	set<Node*> countedHosts;
 	for (auto iter : V) {
+		if (countedHosts.count(iter.second) > 0) {
+			continue;
+		}
 		E.dups += calcDuplicationHeight(iter.second);
+		countedHosts.insert(iter.second);
+		// XXX assumes all segmental duplications are permitted -- everything is adjacent!
 	}
 	return E;
 }
 
 void CophyMultiMap::doPageReconciliation() {
-	for (CophyMap *Phi : maps) {
+	bool _debugging(true);
+	for (auto mpr : maps) {
+		CophyMap *Phi = mpr.second;
 		Phi->doPageReconciliation();
+		Phi->inferEvents();
+		DEBUG(cout << *Phi << endl);
 	}
+}
+
+ostream& operator<<(ostream& os, CophyMultiMap& CMM) {
+	os << "CophyMultiMap of " << endl;
+	Tree* H(nullptr);
+	auto mitr = CMM.getMaps().begin();
+	H = mitr->second->getHostTree();
+	for (auto mpr : CMM.getMaps()) {
+		os << '\t' << mpr.first->getLabel() << ":->" << mpr.second->getHostTree()->getLabel() << endl;
+	}
+	os << H->getLabel() << endl << *H;
+	for (auto mpr : CMM.getMaps()) {
+		mpr.first->setShowInfo(true);
+		os << mpr.first->getLabel() << endl << *(mpr.first);
+	}
+	return os;
 }
 
 

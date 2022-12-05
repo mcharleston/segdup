@@ -31,25 +31,32 @@ private:
 	Tree* H;	// the species or host tree
 	Tree* P;	// the gene or parasite tree
 	NodeMap phi;	// nodes in P mapped to nodes in H -- starting with the leaves
+	std::map<Node*, eventType> event;
 	inversenodemap invPhi;
+	std::map<Node*, std::string> info; // TODO supply this to the parasite/gene tree when mapping is done, for display
 	// Note that in genetree/species tree problems we talk about a gene tree G and a species tree S.
 public:
 	CophyMap() : H(nullptr), P(nullptr) {}
-	CophyMap(Tree *host, Tree *para) : H(host), P(para) {}
+	CophyMap(Tree *host, Tree *para) : H(host), P(para) { P->setShowInfo(true); P->setInfo(&info); }
 	CophyMap(NodeMap inphi);
 	virtual ~CophyMap();
 	CophyMap(const CophyMap &other);
 
-	std::set<Node*> calcAvailableNewHosts(Node* p);
+	std::set<std::pair<Node*, eventType> > calcAvailableNewHosts(Node* p);
+
+	void checkValidHostOrdering();
 
 	EventCount countEvents();
+	std::string describeEvent(eventType e);
+	inline std::string describeEvent(Node *p) { return describeEvent(event[p]); }
 	void doPageReconciliation();
 
-	NodeMap& getPhi() { return phi; }
+	eventType getEvent(Node* p) { return event.at(p); }
 	Node* getHost(Node* p) { return phi[p]; }
 	Tree* getHostTree() { return H; }
+	std::map<Node*, std::string>* getInfo() { return &info; }
+	NodeMap& getPhi() { return phi; }
 	Tree* getParasiteTree() { return P; }
-	short getType(Node* p) { return p->event; }
 
 	void inferEvents();
 	void inferEvents(Node *p);
@@ -57,12 +64,14 @@ public:
 
 	Node* mapToLCAofChildren(Node* p);
 	void moveToHost(Node* p, Node *h);
+	void moveToHost(Node* p, Node *h, eventType event);
 
 	CophyMap& operator=(const CophyMap &other);
 
 	void setPhi(std::string pstr, std::string hstr);
 	void setPhi(Node* p, Node* h);
-	void storeHostInfo();
+	void storeAssociationInfo();
+	void storeAssociationInfo(Node* p, Node* h, eventType e);
 
 };
 

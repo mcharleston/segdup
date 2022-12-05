@@ -32,7 +32,7 @@ NodeMap::NodeMap(initializer_list<pair<Node*, Node*>> leaves) {
 				<< " and P = " << P << endl);
 		for (auto phi : leaves) {
 			data[phi.first] = phi.second;
-			phi.first->event = noevent;
+//			phi.first->event = noevent;
 		}
 	} catch (const exception& e) {
 		cout << e.what() << endl;
@@ -56,7 +56,7 @@ NodeMap::NodeMap(Tree* inH, Tree* inP, string assocStr) : H(inH), P(inP) {
 		++sit;
 		Node* h = (*H)[*sit];
 		data[p] = h;
-		p->event = noevent;
+//		p->event = noevent;
 		DEBUG(cout << "parasite " << p->getLabel() << " is on host " << h->getLabel() << endl)
 	}
 }
@@ -85,7 +85,7 @@ Node* NodeMap::getImage(const std::string& pLabel) {
 /**
  * Returns the (host node, association type) pair for the parasite
  */
-associationtype& NodeMap::operator[](const std::string& paraLabel) {
+HostPtr& NodeMap::operator[](const std::string& paraLabel) {
 	return data[(*P)[paraLabel]];
 }
 
@@ -112,7 +112,7 @@ void NodeMap::setPHAssociation(const std::string& pstr, const std::string& hstr,
 	Node *h = H->at(hstr);
 	assert(p);
 	assert(h);
-	setPHAssociation(p, h, a);
+	setPHAssociation(p, h);
 }
 
 ostream& operator<<(ostream& os, NodeMap& NM) {

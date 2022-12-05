@@ -13,22 +13,34 @@
 
 namespace segdup {
 
+const double defDuplicationCost(10.0);
+const double defLossCost(0.0);
+
 class CophyMultiMap {
 private:
-	std::vector<CophyMap*> maps;
+	std::map<Tree*, CophyMap*> maps; // Parasite tree -> Map
 	inversenodemap invMap;
+	double duplicationCost;
+	double lossCost;
 public:
-	CophyMultiMap();
-	virtual ~CophyMultiMap();
+	CophyMultiMap(double dup = defDuplicationCost, double loss = defLossCost) : duplicationCost(dup), lossCost(loss) {}
+	virtual ~CophyMultiMap() {}
 
-	void addCophyMap(CophyMap* M) { maps.push_back(M); }
+	void addCophyMap(CophyMap* M) { maps[M->getParasiteTree()] = M; }
 	int calcDuplicationHeight(Node *h);
 	void calcInverseMap();
+	void clear();
 
 	EventCount countEvents();
 	void doPageReconciliation();
 
+//	CophyMap*& operator[](Tree* P) { return maps[P]; }
+
+	std::map<Tree*, CophyMap*>& getMaps() { return maps; }
+
 };
+
+std::ostream& operator<<(std::ostream& os, CophyMultiMap& CMM);
 
 } /* namespace segdup */
 

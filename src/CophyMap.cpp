@@ -31,15 +31,27 @@ CophyMap::CophyMap(const CophyMap &other) {
 	H = other.H;
 	P = other.P;
 	phi = other.phi;
+	invPhi = other.invPhi;
+	event = other.event;
 }
 
-std::set<Node*> CophyMap::calcAvailableNewHosts(Node* p) {
+std::set<pair<Node*, eventType>> CophyMap::calcAvailableNewHosts(Node* p) {
 	// can go up to same vertex to which parent is mapped, and down to the LCA of there the children are mapped.
-	bool _debugging(true);
+	//
+	bool _debugging(false);
 	DEBUG(cout << "Calculating available hosts for node " << p->getLabel() << ":" << endl);
-	std::set<Node*> avail;
+	std::set<pair<Node*, eventType>> avail;
 	Node* bottom;
-	Node* top = getHost(p->getParent()); //->getParent()->getAssociate();
+	Node* top;
+	bool _addCodivergence(false);
+	avail.insert(make_pair(getHost(p), event[p]));
+	pair<Node*, eventType> nuCodiv;
+	if (p->hasParent()) {
+		DEBUG(cout << "p has parent with node label " << p->parent->getLabel() << endl);
+		top = getHost(p->getParent()); //->getParent()->getAssociate();
+	} else {
+		top = getHost(p)->getTree()->getRoot();
+	}
 	if (p->isLeaf()) {
 		bottom = getHost(p);	//->getAssociate();
 	} else {
@@ -48,15 +60,42 @@ std::set<Node*> CophyMap::calcAvailableNewHosts(Node* p) {
 			childHosts.insert(getHost(c));	//->getAssociate());
 		}
 		bottom = H->LCA(childHosts);
+		if (childHosts.count(bottom) == 0) {
+			_addCodivergence = true;
+			nuCodiv = make_pair(bottom, codivergence);
+		}
 	}
 	DEBUG(cout << "bottom location = " << bottom->getLabel() << endl);
 	DEBUG(cout << "top location = " << top->getLabel() << endl);
 	for (Node* n = bottom; n != top; n = n->getParent()) {
-		avail.insert(n);
+		avail.insert(make_pair(n, duplication));
 	}
-	avail.insert(top);
+	if (p->hasParent()) {
+//		if (getHost(p->getParent()) == top && event[p->getParent()] == duplication) {
+//			avail.insert(make_pair(top, duplication));
+//		}
+	} else {
+		avail.insert(make_pair(top, duplication));
+	}
+	if (_addCodivergence) {
+		avail.insert(nuCodiv);
+	}
 	return avail;
 }
+
+void CophyMap::checkValidHostOrdering() {
+	std::map<std::string, Node*>& V = P->getVertices();
+	for (auto vpr : V) {
+		Node *p = vpr.second;
+		if (p->hasParent()) {
+			if (getHost(p)->isAncestralTo(getHost(p->getParent()))) {
+				throw new app_exception("Invalid map! " );//+ p->getLabel() + " has host " + getHost(p)
+//						+ " but its parent node " + p->getParent()->getLabel() + " has host " + getHost(p->getParent()));
+			}
+		}
+	}
+}
+
 
 // Recall:
 //typedef Node* associationtype;	// host x association type
@@ -74,7 +113,7 @@ EventCount CophyMap::countEvents() {
 			DEBUG(cout << m.first->getLabel() << " is a leaf: do not count duplication or codivergence events!" << endl);
 		} else {
 			DEBUG(cout << "counting events for " << m.first->getLabel() << ':' << m.second->getLabel() << ": this is a ");
-			if (getType(m.first) == codivergence) {
+			if (getEvent(m.first) == codivergence) {
 				++E.codivs;
 				DEBUG(cout << "CODIVERGENCE" << endl);
 			} else {
@@ -89,11 +128,22 @@ EventCount CophyMap::countEvents() {
 					<< " is " << H->getDistUp(getHost(m.first), getHost(m.first->getParent()))
 					<< endl);
 			E.losses += H->getDistUp(getHost(m.first), getHost(m.first->getParent()));
-			E.losses -= (getType(m.first->getParent()) == 0) ? 1 : 0;
+			E.losses -= (getEvent(m.first->getParent()) == 0) ? 1 : 0;
 				// if the parent is mapped to a codivergence event then don't count that node as a loss!
 		}
 	}
 	return E;
+}
+
+std::string CophyMap::describeEvent(eventType e) {
+	switch (e) {
+		case codivergence: return "codivergence";
+		case duplication: return "duplication";
+		case loss: return "loss";
+		case noevent: return "noevent";
+		default: break;
+	}
+	return "";
 }
 
 void CophyMap::doPageReconciliation() {
@@ -109,7 +159,7 @@ void CophyMap::doPageReconciliation() {
 	}
 	Node* p = P->getRoot();	// root of the parasite / gene tree
 	mapToLCAofChildren(p);
-	storeHostInfo();
+	storeAssociationInfo();
 	DEBUG(cout << "reconciliation is done" << endl);
 }
 
@@ -117,10 +167,11 @@ void CophyMap::inferEvents() {
 	for (auto a : P->getVertices()) {
 		inferEvents(a.second);	// seems so clunky to not just have a list of vertices in the Tree but hey.
 	}
+	storeAssociationInfo();
 }
 
 void CophyMap::inferEvents(Node *p) {
-	bool _debugging(true);
+	bool _debugging(false);
 	/**
 	 * If this is a leaf, then no event
 	 * Else, this node has children: if they are both mapped to the same node in S, this must be a duplication;
@@ -138,7 +189,7 @@ void CophyMap::inferEvents(Node *p) {
 		p->calcDepth();
 	}
 	if (p->isLeaf()) {
-		p->event = noevent;
+		event[p] = noevent;
 		DEBUG(cout << "This is a leaf: no event" << endl);
 		return;
 	}
@@ -150,11 +201,11 @@ void CophyMap::inferEvents(Node *p) {
 	DEBUG(cout << "\tHosts of children: { "; for (Node* hc : himages) cout << hc->getLabel() << " "; cout << "}" << endl );
 	DEBUG(cout << "\tLCA(<children>) = " << H->LCA(himages)->getLabel() << "; phi[p] = " << phi[p]->getLabel() << endl);
 	if ((H->LCA(himages) == phi[p]) && (himages.count(phi[p]) == 0)) {
-		p->event = codivergence;
+		event[p] = codivergence;
 	} else {
-		p->event = duplication;
+		event[p] = duplication;
 	}
-	DEBUG(cout << "\tEvent for node " << p->getLabel() << " is " << p->describeEvent() << endl);
+	DEBUG(cout << "\tEvent for node " << p->getLabel() << " is " << describeEvent(p) << endl);
 	// Now need to check to see if this node is mapped *above* the highest mapped child: this is also a duplication.
 	// XXX did I do the above?
 }
@@ -229,7 +280,7 @@ Node* CophyMap::mapToLCAofChildren(Node* p) {
 		occupied.insert(h);	// this should be a child node from the parent node p
 	}
 //	p->event = (numChildren == occupied.size()) ? codivergence : duplication;	// should generalise to multifurcations
-	DEBUG(cout << p->getLabel() << ':' << phi[p]->getLabel() << " is an event of type " << p->getEvent() << endl);
+	DEBUG(cout << p->getLabel() << ':' << phi[p]->getLabel() << " is an event of type " << getEvent(p) << endl);
 	return lca;
 }
 
@@ -237,18 +288,29 @@ void CophyMap::moveToHost(Node* p, Node *h) {
 	try {
 		// have to change the host of p stored in p, the nodemap AND the inversenodemap
 		// first remove p from the inverseNodeMap of h:
-		DEBUG(cout << "Moving " << p->getLabel() << " from " << phi[p]->getLabel() << " to " << h->getLabel() << endl);
 		Node* currentHost = phi[p];
 		phi[p] = h;
 		invPhi[currentHost].erase(p);
 		invPhi[h].insert(p);
-		P->getInfo().at(p) = h->getLabel();
+//		P->getInfo().at(p) = h->getLabel();
 	} catch (const exception& e) {
 		cout << e.what();
 	}
 }
+void CophyMap::moveToHost(Node* p, Node *h, eventType e) {
+//	DEBUG(cout << "Moving " << p->getLabel() << " from " << eventSymbol[event[p]] << phi[p]->getLabel()
+//			<< " to " << eventSymbol[e] << h->getLabel() << endl);
+	moveToHost(p, h);
+	event[p] = e;
+	storeAssociationInfo(p, h, e);
+}
 
 CophyMap& CophyMap::operator=(const CophyMap &other) {
+	H = other.H;	// the species or host tree
+	P = other.P;	// the gene or parasite tree
+	phi = other.phi;	// nodes in P mapped to nodes in H -- starting with the leaves
+	invPhi = other.invPhi;
+	event = other.event;
 	return *this;
 }
 
@@ -259,24 +321,43 @@ void CophyMap::setPhi(string pstr, string hstr) {
 }
 void CophyMap::setPhi(Node* p, Node* h) {
 	phi[p] = h;
-	p->event = noevent;	// meaning it has to be recalculated
+	event[p] = noevent;	// meaning it has to be recalculated
 	invPhi[h].insert(p);
 }
 
-void CophyMap::storeHostInfo() {
+void CophyMap::storeAssociationInfo() {
+	/**
+	 * Put info into the info map for each parasite/gene node:
+	 * [<]p:h to show p codiverges on node h
+	 * [=]p:h to show p duplicates on node h
+	 * [x]p:h to show p has a loss (extinction, sampling failure, or miss-the-boat) on h
+	 * p:h to show no event, such as at leaves
+	 */
 	bool _debugging(false);
-	map<Node*, string>& info = P->getInfo();
 	info.clear();
 	for (auto d : phi.getData()) {
-		info[d.first] = d.second->getLabel();
-		DEBUG(cout << d.first->getLabel() << ":" << d.second->getLabel() << endl);
+		storeAssociationInfo(d.first, d.second, event[d.first]);
 	}
+	P->setInfo(&info);
+}
+
+void CophyMap::storeAssociationInfo(Node* p, Node* h, eventType e) {
+	info[p] = "";
+	if (!p->isLeaf()) {
+		string str = "[";
+		str += eventSymbol[event[p]];
+		str += "]";
+		info[p] = str;
+	}
+	info[p] += p->getLabel() + ":" + h->getLabel();
+//	info[d.first] = d.second->getLabel();
+//	DEBUG(cout << info[p] << endl);
 }
 
 ostream& operator<<(ostream& os, CophyMap& T) {
 	Tree* H = T.getHostTree();
 	Tree* P = T.getParasiteTree();
-	os << "Host / independent tree " << H->getLabel() << ":" << endl << *H;
+//	os << "Host / independent tree " << H->getLabel() << ":" << endl << *H;
 	os << "Parasite / dependent tree " << P->getLabel() << ":" << endl << *P;
 	return os;
 }

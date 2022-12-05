@@ -67,7 +67,7 @@ void SegDupParser::parseSegDupBlock() {
 //		advance();
 		if (matches("hosttree")) {
 			Tree* T = new Tree();
-			parseNewickSubtree(T->getRoot());	// XXX should move this to Phylogeny class.
+			parseNewickSubtree(T->getRoot(), 'v');	// XXX should move this to Phylogeny class.
 			T->compressTraverseWrite(cout);
 			ignore(';');
 		} else if (matches("speciestree")) {
@@ -120,13 +120,13 @@ void SegDupParser::parseNewickTree(Tree* T) {
 		ignore('=');
 	}
 	Node* root = new Node();
-	parseNewickSubtree(root);
+	parseNewickSubtree(root, T->getPrefixChar());
 	T->setRoot(root);
 	T->gatherVertices();
 	T->calculateHeights(root);
 }
 
-void SegDupParser::parseNewickSubtree(Node* v) {
+void SegDupParser::parseNewickSubtree(Node* v, char prefix) {
 	/**
 	 * See NEXUSParser::parseNewickFormatTree for Newick format
 	 */
@@ -140,7 +140,7 @@ try {
 		// internal node
 		advance();
 		Node* child = new Node();
-		parseNewickSubtree(child);
+		parseNewickSubtree(child, prefix);
 		if (!child->isLeaf()) {
 			if (isString()) {
 				child->setLabel(getString());
@@ -151,7 +151,7 @@ try {
 		v->setFirstChild(child);
 		if (v->getLabel() == "*") {
 			++numInternals;
-			sprintf(internalLabel, "v%d", numInternals);
+			sprintf(internalLabel, "%c%d", prefix, numInternals);
 			v->setLabel(internalLabel);
 		}
 		DEBUG(cout << " set " << v->getLabel() << " as parent of " << child->getLabel() << endl);
@@ -159,14 +159,14 @@ try {
 			// siblings!
 			advance();
 			Node* sib = new Node();
-			parseNewickSubtree(sib);
+			parseNewickSubtree(sib, prefix);
 			if (!child->isLeaf()) {
 				if (isString()) {
 					child->setLabel(getString());
 					advance();
 				} else {
 					++numInternals;
-					sprintf(internalLabel, "v%d", numInternals);
+					sprintf(internalLabel, "%c%d", prefix, numInternals);
 					child->setLabel(internalLabel);
 				}
 			}

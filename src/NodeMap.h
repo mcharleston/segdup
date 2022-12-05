@@ -18,9 +18,19 @@ namespace segdup {
 
 class Tree;
 
-typedef Node* associationtype;	// host x association type
-typedef std::map<Node*, associationtype> nodemaptype;	// parasite x (host x association type)
-typedef std::map<Node*, std::set<associationtype> > wideassociationmap;
+class Association {
+public:
+	Node* p;
+	Node* h;
+	eventType e;
+	Association() : p(nullptr), h(nullptr), e(noevent) {}
+	Association(Node *pin, Node* hin, eventType et) : p(pin), h(hin), e(et) {}
+	Association(const Association& ass) : p(ass.p), h(ass.h), e(ass.e) {}
+};
+typedef std::pair<Node*, eventType> association;
+typedef Node* HostPtr;	// host x association type
+typedef std::map<Node*, HostPtr> nodemaptype;	// parasite x (host x association type)
+typedef std::map<Node*, std::set<HostPtr> > wideassociationmap;
 typedef std::map<Node*, std::set<Node*>> inversenodemap;
 
 /**
@@ -39,7 +49,7 @@ public:
 	NodeMap(const NodeMap &other);
 	virtual ~NodeMap();
 
-	associationtype& at(Node* n) { return data.at(n); }
+	HostPtr& at(Node* n) { return data.at(n); }
 	inline void clear() { data.clear(); }
 
 	nodemaptype& getData() { return data; }
@@ -48,11 +58,12 @@ public:
 	Node* getImage(Node* p);
 	Node* getImage(const std::string& pLabel);
 
-	inline associationtype& operator[](Node* n) { return data[n]; }
-	associationtype& operator[](const std::string& paraLabel);
+	inline HostPtr& operator[](Node* n) { return data[n]; }
+	HostPtr& operator[](const std::string& paraLabel);
 	NodeMap& operator=(const NodeMap &other);
 
-	void setPHAssociation(Node* p, Node* h, eventType a) { data[p] = h; p->event = a; }
+//	void setPHAssociation(Node* p, Node* h, eventType a) { data[p] = h; p->event = a; }
+	void setPHAssociation(Node* p, Node* h) { data[p] = h; }
 	void setPHAssociation(const std::string& pstr, const std::string& hstr, eventType a);
 	void setHostTree(Tree* hptr) { H = hptr; }
 	void setParasiteTree(Tree* pptr) { P = pptr; }

@@ -22,20 +22,19 @@ using namespace std;
 
 namespace segdup {
 
+Tree::Tree(char pre, std::string str) : root(nullptr), labelSpace(0), numVertices(-1), prefix(pre) {
+	if (str[0] == '(') {
+		constructFromNewickString(str);
+		calculateHeights(root);
+		calcAncestry();
+		_showInfo = false;
+	} else {
+		throw new app_exception("Tree constructor with a single string argument is expecting Newick format tree description.");
+	}
+}
 Tree::Tree(std::string str) : root(nullptr), labelSpace(0), numVertices(-1) {
 	if (str[0] == '(') {
-		parsing::TokenList TL;
-		istringstream instr(str);
-		TL.tokenize(instr);
-		parsing::SegDupParser p(TL);
-		root = new Node("*");
-		TL.reset();
-		numVertices = 1;
-		p.parseNewickSubtree(root);
-		gatherVertices();
-		for (auto n : V) {
-			n.second->setTree(this);
-		}
+		constructFromNewickString(str);
 		calculateHeights(root);
 		calcAncestry();
 		_showInfo = false;
@@ -80,6 +79,7 @@ void Tree::compressTraverseWrite(ostream& os) {
 		DEBUG(cout << "root->getHeight() negative so calculating heights" << endl);
 		calculateHeights(root);
 	}
+	DEBUG(cout << "Address of info map = " << &info << endl);
 	labelSpace = getMaxLabelWidth(root);
 	compressTraverseWrite(os, root);
 }
@@ -90,6 +90,7 @@ void Tree::compressTraverseWrite(ostream & os, Node* p) {
 		hline = '-',
 		link[1024],
 		vline = '|';
+	string nodeLabel;
 	if (p != nullptr) {
 		Node* q = p->getParent();
 		int startpos = 0, stoppos = 0;
@@ -112,16 +113,18 @@ void Tree::compressTraverseWrite(ostream & os, Node* p) {
 		DEBUG(if (q != nullptr) { cout << "parent(p) = " << q->getLabel() << endl; } );
 
 		if (p->isFirstChild()) {
-			label = "";
-			if (_showInfo && info.count(q) > 0) {
-				label = (q->getEvent() == codivergence) ? "[<]" : "[=]";
+			nodeLabel = "";
+//			if (_showInfo && info.count(q) > 0) {
+//				nodeLabel = (q->getEvent() == codivergence) ? "[<]" : "[=]"; // XXX This is a problem!
+//				// XXX I need to store the event separately from the node, in the cophymap
+//			}
+//			nodeLabel += q->getLabel();
+			if (_showInfo && (info->count(q) > 0)) {
+				nodeLabel = info->at(q);
+			} else {
+				nodeLabel = q->getLabel();
 			}
-			label += q->getLabel();
-			if (_showInfo && (info.count(q) > 0)) {
-				label += ":";
-				label += info.at(q);
-			}
-			std::memcpy(link, label.c_str(), label.length());
+			std::memcpy(link, nodeLabel.c_str(), nodeLabel.length());
 		} else {
 			link[0] = '+';
 			while (q != nullptr) {
@@ -142,12 +145,17 @@ void Tree::compressTraverseWrite(ostream & os, Node* p) {
 		// if p is a leaf then we need to output the line buffer:
 		if (p->isLeaf()) {
 			treebuf[spacing*(root->getHeight()+1)] = '\0';
-			string label(p->getLabel());
-			if (_showInfo && (info.count(p) > 0)) {
-				label += ":";
-				label += info.at(p);
+			if (_showInfo && (info->count(p) > 0)) {
+				nodeLabel = info->at(p);
+			} else {
+				nodeLabel = p->getLabel();
 			}
-			os << treebuf << " " << label << "\n";
+//			string label(p->getLabel());
+//			if (_showInfo && (info.count(p) > 0)) {
+//				label += ":";
+//				label += info.at(p);
+//			}
+			os << treebuf << " " << nodeLabel << "\n";
 			os.flush();
 			// we've output the string now, so clear the buffer:
 			for (i = 0; i < kMediumStringLength; i++)
@@ -157,6 +165,21 @@ void Tree::compressTraverseWrite(ostream & os, Node* p) {
 		}
 		if (p->getSibling() != nullptr)
 			compressTraverseWrite(os, p->getSibling());
+	}
+}
+
+void Tree::constructFromNewickString(std::string str) {
+	parsing::TokenList TL;
+	istringstream instr(str);
+	TL.tokenize(instr);
+	parsing::SegDupParser p(TL);
+	root = new Node("*");
+	TL.reset();
+	numVertices = 1;
+	p.parseNewickSubtree(root, prefix);
+	gatherVertices();
+	for (auto n : V) {
+		n.second->setTree(this);
 	}
 }
 
@@ -178,8 +201,8 @@ void Tree::gatherVertices() {
 
 int Tree::getMaxLabelWidth(Node *v) {
 	int length = v->getLabel().length();
-	if (_showInfo && (info.count(v) > 0)) {
-		length += 4 + info.at(v).length();
+	if (_showInfo && (info->count(v) > 0)) {
+		length = info->at(v).length();
 	}
 	Node* child = v->getFirstChild();
 	while (child != nullptr) {
@@ -199,7 +222,7 @@ bool Tree::isAncestralTo(Node* x, Node*y) {
 	return (distUp[std::pair<Node*, Node*>(y, x)] > 0);
 }
 
-Node* Tree::LCA(std::set<Node*> V) const {
+Node* Tree::LCA(std::set<Node*> V) {
 	Node* lca = *(V.begin());
 	for (Node* v : V) {
 		lca = LCA(lca, v);
@@ -207,7 +230,17 @@ Node* Tree::LCA(std::set<Node*> V) const {
 	return lca;
 }
 
-Node* Tree::LCA(Node* u, Node* v) const {
+Node* Tree::LCA(const string& ustr, const string& vstr) {
+	if (V.count(ustr) == 0) {
+		throw new app_exception("Tree::LCA(ustr, vstr); no vertex matching ustr");
+	}
+	if (V.count(vstr) == 0) {
+		throw new app_exception("Tree::LCA(ustr, vstr); no vertex matching vstr");
+	}
+	return LCA(V[ustr], V[vstr]);
+}
+
+Node* Tree::LCA(Node* u, Node* v) {
 	/**
 	 * Not the fastest, but it should be fine for now.  Make it work BEFORE trying to make it faster!
 	 */
@@ -258,7 +291,7 @@ Tree& Tree::operator=(const string& str) {
 		root = new Node("root");
 		TL.reset();
 		numVertices = 1;
-		p.parseNewickSubtree(root);
+		p.parseNewickSubtree(root, 'v');
 		gatherVertices();
 		for (auto n : V) {
 			n.second->setTree(this);
@@ -278,6 +311,17 @@ ostream& operator<<(ostream& os, Tree& T) {
 //	os << T.getLabel() << " = " << *(T.getRoot()) << std::endl;
 	T.compressTraverseWrite(os);
 	return os;
+}
+
+void Tree::putInternalVertices(std::set<Node*>& IV) {
+	if (V.size() == 0) {
+		gatherVertices();
+	}
+	for (auto v : V) {
+		if (!v.second->isLeaf()) {
+			IV.insert(v.second);
+		}
+	}
 }
 
 void Tree::setNodeLabel(const std::string& str, const std::string& newlabel) {

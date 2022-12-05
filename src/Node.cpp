@@ -103,17 +103,6 @@ void Node::calcHeight() {
 	}
 }
 
-std::string Node::describeEvent() {
-	switch (event) {
-		case codivergence: return "codivergence";
-		case duplication: return "duplication";
-		case loss: return "loss";
-		case noevent: return "noevent";
-		default: break;
-	}
-	return "";
-}
-
 int Node::getDepth() {
 	if (depth < 0) {
 		calcDepth();

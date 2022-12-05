@@ -34,7 +34,7 @@ public:
 //	void parseMatrix();
 	void parseNEXUSBlock();
 	void parseNewickTree(segdup::Tree* T);
-	void parseNewickSubtree(segdup::Node* v);
+	void parseNewickSubtree(segdup::Node* v, char prefix);
 //	void parseSetsBlock();
 	void parseTaxaBlock();
 

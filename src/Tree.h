@@ -27,11 +27,14 @@ private:
 	int labelSpace;	// how much does each vertex label need?
 	int numVertices;
 	bool _showInfo;
-	std::map<Node*, std::string> info;
+	char prefix;
+	std::map<Node*, std::string>* info; // TODO this needs to be turned into a pointer, referring back to maybe an original in a cophymap or null.
+//	std::map<Node*, eventType> event;
 
 public:
-	Tree() : label("untitled"), root(nullptr), labelSpace(0), numVertices(-1), _showInfo(false) {}
-	Tree(Node* r) : label("untitled"), root(r), labelSpace(0), numVertices(-1), _showInfo(false) {}
+	Tree() : label("untitled"), root(nullptr), labelSpace(0), numVertices(-1), _showInfo(false), prefix('v'), info(nullptr) {}
+	Tree(Node* r) : label("untitled"), root(r), labelSpace(0), numVertices(-1), _showInfo(false), prefix('v'), info(nullptr) {}
+	Tree(char prefix, std::string);
 	Tree(std::string str);
 	~Tree() { delete root; }
 
@@ -42,29 +45,35 @@ public:
 	inline void calculateHeights(Node* v) { root->calcHeight(); }
 	void compressTraverseWrite(std::ostream& os);
 	void compressTraverseWrite(std::ostream& os, Node* v);
+	void constructFromNewickString(std::string str);
 //	void compressTraverseWriteOld(std::ostream& os, Node* v, bool _showAssociations = false);
 
 	void gatherVertices();
 	int getDistUp(Node* lower, Node* upper);
 	inline unsigned int getHeight() { return root->getHeight(); }
-	std::map<Node*, std::string>& getInfo() { return info; }
+	std::map<Node*, std::string>* getInfo() { return info; }
 	std::string getLabel() { return label; }
 	Node* getLCAofChildren(Node *p);
 	int getMaxLabelWidth(Node* v);
 	inline int getNumEdges() const { return V.size() - 1; }
 	inline int getNumVertices() const { return V.size(); }
+	char getPrefixChar() const { return prefix; }
 	Node* getRoot() { return root; }
 	inline bool getShowInfo() const { return _showInfo; }
 	std::map<std::string, Node*>& getVertices() { if (V.size() == 0) { gatherVertices(); } return V; }
 
 	bool isAncestralTo(Node* x, Node* y);
 
-	Node* LCA(std::set<Node*> V) const;
-	Node* LCA(Node* u, Node* v) const;
+	Node* LCA(std::set<Node*> V);
+	Node* LCA(Node* u, Node* v);
+	Node* LCA(const std::string& ustr, const std::string& vstr);
 
 	Node* operator[](const std::string& str) { return V[str]; }
 	Tree& operator=(const std::string& str);
 
+	void putInternalVertices(std::set<Node*>& IV);
+
+	void setInfo(std::map<Node*, std::string>* inf) { info = inf; }
 	void setLabel(const std::string& str) { label = str; }
 	void setNodeLabel(const std::string& str, const std::string& newlabel);
 	void setNodeLabel(Node* n, const std::string& newlabel);

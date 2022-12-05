@@ -27,6 +27,7 @@ enum eventType {
 	loss,
 	noevent
 };
+const char eventSymbol[4]{'<','=','x',' '};
 
 class Node {
 
@@ -41,7 +42,7 @@ private:
 	Node* sibling;
 	Node* associate;
 	Tree* T;
-	eventType event;
+//	eventType event;
 	int depth;
 	int height;
 	double branchLength;
@@ -49,10 +50,10 @@ private:
 public:
 	Node() : label("*"),
 				parent(nullptr), firstChild(nullptr), sibling(nullptr), associate(nullptr),
-				T(nullptr), event(noevent), depth(-1), height(-1), branchLength(0.0), _visited(false) {}
+				T(nullptr), depth(-1), height(-1), branchLength(0.0), _visited(false) {}
 	Node(std::string str) : label(str),
 				parent(nullptr), firstChild(nullptr), sibling(nullptr), associate(nullptr),
-				T(nullptr), event(noevent), depth(-1), height(-1), branchLength(0.0), _visited(false) {}
+				T(nullptr), depth(-1), height(-1), branchLength(0.0), _visited(false) {}
 	virtual ~Node();
 
 	void addChild(Node* c);
@@ -69,7 +70,7 @@ public:
 
 	inline double getBranchLength() const { return branchLength; }
 	int getDepth();
-	inline eventType& getEvent() { return event; }
+//	inline eventType& getEvent() { return event; }
 	int getHeight();
 	inline const std::string& getLabel() const { return label; }
 	inline Node* getFirstChild() { return firstChild; }
