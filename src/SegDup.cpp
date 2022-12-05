@@ -324,15 +324,13 @@ void Algorithm1(CophyMultiMap& CMM) {
 			cout << "}" << endl;
 		);
 	}
-	int nSteps(10000);
+	int nSteps(1000);
 
 	double Tinitial(100.0), T(0.0);	// XXX MAGIC NUMBERS THAT NEED BETTER NAMES
-	// TODO Create a sampling move that is sorted by its cost by default, from largest (probability) to smallest...?
 	std::set<Contender> neighbours;
 	EventCount ecoriginal = CMM.countEvents();
 	cout << "ORIGINAL MAP:" << endl << CMM << endl << ecoriginal << endl;
 	cout << "initial CSD: " << CSD(ecoriginal) << endl;
-//	vector<association, double>;
 	for (int t(0); t < nSteps; ++t) {
 		int nullMoves(0);
 		T = Tinitial*(1.0 - (1.0 * t / nSteps));
