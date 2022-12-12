@@ -7,6 +7,7 @@
 
 #include <chrono>
 #include <cmath>	// for exp
+#include <cstring> // for strcmp
 #include <functional> // for transform
 #include <map>
 #include <random>
@@ -29,6 +30,8 @@ using namespace segdup;
 
 bool _debugging(true);
 bool _silent(false);
+int nSteps(1000);
+double Tinitial(10.0);
 
 unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 
@@ -49,7 +52,6 @@ uint plran(float l, float u, float r) {
 	float ex(r+1.0);
 	return static_cast<uint>( std::pow( std::pow(u,ex) - std::pow(l, ex)*y + std::pow(l, ex), 1.0/ex ) );
 }
-
 
 double lossCost(defLossCost);			// XXX
 double duplicationCost(defDuplicationCost);	// XXX MAGIC number!
@@ -299,55 +301,57 @@ void testDuplicationHeight() {
 	cout << "Counting events with segmental duplications" << endl << CMM.countEvents() << endl;
 }
 
-void Algorithm1(CophyMultiMap& CMM) {
-	bool _debugging(true);
+void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
+	bool _debugging(false);
 	DEBUG(cout << hline << "Algorithm1" << endl << hline);
 	DEBUG(cout << "Input multi-map:" << endl << CMM);
 	CMM.doPageReconciliation();
-	DEBUG(cout << "Initial reconciliation complete" << endl);
-	DEBUG(for (auto mpr : CMM.getMaps()) {
-		CophyMap* M = mpr.second;
-		cout << M->getParasiteTree()->getLabel() << " event counts: " << M->countEvents() << endl;
-	});
+	DEBUG(cout << "Initial reconciliation complete:" << endl << CMM);
+//	DEBUG(for (auto mpr : CMM.getMaps()) {
+//		CophyMap* M = mpr.second;
+//		cout << M->getParasiteTree()->getLabel() << " event counts: " << M->countEvents() << endl;
+//	});
 
-	DEBUG(cout << "total event counts: " << CMM.countEvents() << endl);
+//	DEBUG(cout << "total event counts: " << CMM.countEvents() << endl);
 	CophyMultiMap nuMM(CMM);
 	map<CophyMap*, set<Node*>> iV;	// internal vertices of each parasite / gene tree
 	for (auto mpr : CMM.getMaps()) {
-		CophyMap* M = mpr.second;
+		CophyMap* M = mpr.second;string segdupHelp("SegDup Help:\n"
+				"\t>./segdup -[hvDn]");
 		Tree* G = M->getParasiteTree();
 		G->putInternalVertices(iV[M]);
-		DEBUG(cout << "Tree " << G->getLabel() << " has internal vertices { ";
-			for (Node* n : iV[M]) {
-				cout << n->getLabel() << " ";
-			}
-			cout << "}" << endl;
-		);
+//		DEBUG(cout << "Tree " << G->getLabel() << " has internal vertices { ";
+//			for (Node* n : iV[M]) {
+//				cout << n->getLabel() << " ";
+//			}
+//			cout << "}" << endl;
+//		);
 	}
-	int nSteps(1000);
 
-	double Tinitial(100.0), T(0.0);	// XXX MAGIC NUMBERS THAT NEED BETTER NAMES
+	double T(0.0);
 	std::set<Contender> neighbours;
 	EventCount ecoriginal = CMM.countEvents();
 	cout << "ORIGINAL MAP:" << endl << CMM << endl << ecoriginal << endl;
 	cout << "initial CSD: " << CSD(ecoriginal) << endl;
+	string mapDescription;
 	for (int t(0); t < nSteps; ++t) {
 		int nullMoves(0);
 		T = Tinitial*(1.0 - (1.0 * t / nSteps));
 		for (auto mpr : CMM.getMaps()) {
 			CophyMap* M = mpr.second;
-			DEBUG(cout << hline << "ORIGINAL MAP:" << (*M));
+//			DEBUG(cout << hline << "ORIGINAL MAP:" << (*M));
 			for (Node* p : iV[M]) {
 				neighbours.clear();
 				set<pair<Node*, eventType>> nextImages = M->calcAvailableNewHosts(p);
-				DEBUG(cout << "Node " << p->getLabel() << " has possible images { ";
+				DEBUG(
+					cout << "Node " << p->getLabel() << " has possible images { ";
 					for (auto a : nextImages) {
-						cout << eventSymbol[a.second] << a.first->getLabel() << " ";
-					}
-					cout << "}" << endl;
+							cout << eventSymbol[a.second] << a.first->getLabel() << " ";
+						}
+					cout << "}" << endl
 				);
 				for (auto a : nextImages) {
-					DEBUG(cout << "***" << endl);
+//					DEBUG(cout << "***" << endl);
 					if (a.first == M->getHost(p) && a.second == M->getEvent(p)) {
 //						DEBUG(cout << "No change: " << p->getLabel() << " staying on " << a.first->getLabel() << endl);
 //						DEBUG(cout << "Combined event counts: " << ecoriginal << "; cost = " << CSD(ecoriginal) << endl);
@@ -356,19 +360,18 @@ void Algorithm1(CophyMultiMap& CMM) {
 						noChange._noMove = true;
 						noChange.setLabel("leaving " + p->getLabel() + " on [" + eventSymbol[a.second] + "]" + a.first->getLabel());
 
-						// neighbours.insert(noChange);
-						// XXX UNCOMMENT THIS
+						neighbours.insert(noChange);
 //						DEBUG(cout << "Adding a noChange move: " << noChange << endl);
 						++nullMoves;
 						continue;
 					}
 					if (1) {
-						DEBUG(cout << "Testing moving " << p->getLabel() << " to host " << eventSymbol[a.second] << a.first->getLabel() << endl);
+//						DEBUG(cout << "Testing moving " << p->getLabel() << " to host " << eventSymbol[a.second] << a.first->getLabel() << endl);
 						Node* oldHost = M->getHost(p);
 						eventType oldEvent = M->getEvent(p);
 						M->moveToHost(p, a.first, a.second);
 						EventCount ec = CMM.countEvents();
-						DEBUG(cout << "New event counts: " << ec << endl);
+//						DEBUG(cout << "New event counts: " << ec << endl);
 						Association ass(p, a.first, a.second);
 						double score = exp(-CSD(ec) / (1.0*T));
 						Contender con( score, p, a.first, a.second, M );
@@ -413,7 +416,7 @@ void Algorithm1(CophyMultiMap& CMM) {
 //							<< " has cost " << nei.getScore() << endl);
 //				}
 //				DEBUG(cout << '\t' << nullMoves << " null moves with cost " << CSD(ecoriginal) << endl);
-				// DO THE SAMPLING HERE
+//				 DO THE SAMPLING HERE
 //				DEBUG(
 //						cout << "Scores of neighbours: ";
 //						for (auto nei : neighbours) {
@@ -422,20 +425,24 @@ void Algorithm1(CophyMultiMap& CMM) {
 //						cout << endl
 //						);
 				double r = dran(total);
-//				DEBUG(cout << total << " >= " << r << endl);
+				DEBUG(cout << "Total probability proportional to " << total << endl);
 				for (auto nei : neighbours) {
 //					DEBUG(cout << "This neighbour has score " << nei.getScore() << endl);
 					if (r <= nei.getScore()) {
 						if (nei._noMove) {
-							DEBUG(cout << "Selected move: No change" << endl);
+							DEBUG(cout << "Selected move: No change (probability = " << (nei.getScore()/total) << ")" << endl);
 						} else {
 							// sample this one
-							DEBUG(cout << "Selected move: " << nei.getLabel() << endl);
+							DEBUG(cout << "Selected move: " << nei.getLabel() << " (probability = " << (nei.getScore()/total) << ")" << endl);
 							nei.getMap()->moveToHost(nei.getParasite(), nei.getHost(), nei.getEvent());
 							nei.getMap()->checkValidHostOrdering();
 							DEBUG(cout << (*M));
+//							DEBUG(cout << nei.getLabel() << endl << *(nei.getMap()->getParasiteTree()));
 //							DEBUG(cout << t << '\t' << nei.getLabel() << endl);
 						}
+						CMM.toCompactString(mapDescription);
+						sampledDistribution[mapDescription] += 1;
+						DEBUG(cout << nei.getLabel() << '\t' << nei.getScore() << endl);
 						break;
 					}
 //					DEBUG(cout << "r reducing from " << r);
@@ -446,7 +453,12 @@ void Algorithm1(CophyMultiMap& CMM) {
 			}
 		}
 	}
-	cout << hline << endl << "FINAL Multiple CophyMap found by Algorithm 1:" << endl;
+	cout << hline << "Sampled Distribution of Solutions:" << endl
+			<< "Event Counts; Score\tInternal images\tnumSamples/" << nSteps << endl;
+	for (auto dis : sampledDistribution) {
+		cout << dis.first << '\t' << dis.second << endl;
+	}
+	cout << hline << "FINAL Multiple CophyMap found by Algorithm 1:" << endl;
 	EventCount ecFinal(CMM.countEvents());
 	cout << CMM << ecFinal << endl << hline << endl;
 	cout << "final CSD: " << CSD(ecFinal) << endl;
@@ -684,7 +696,7 @@ void ybcTestCases() {
 	doTestCase4();
 	doTestCase5();
 	doTestCase6();
-	doTestCase7();
+//	doTestCase7();
 }
 
 void doAlgorithmTest() {
@@ -706,30 +718,31 @@ void doAlgorithmTest() {
 	G2.setShowInfo(true);
 	CMM.addCophyMap(&M1);
 	CMM.addCophyMap(&M2);
-	Algorithm1(CMM);
+	map<string, int> sampledDistribution;
+	Algorithm1(CMM, sampledDistribution);
 }
 
 void doAlgorithmTest2() {
 	CophyMultiMap CMM;
 	Tree S('s', "(A,(B,C))");
 	S.setLabel("S");
-	Tree G1('g', "(a1,(a2,(a3,(a4,(a5,a6)))))");
-	Tree G2('g', "(b1,(b2,(b3,(b4,(b5,b6)))))");
-	Tree G3('g', "(c1,(c2,(c3,(c4,(c5,c6)))))");
+	Tree G1('g', "(a1,(a2,(a3,a4)))");
+	Tree G2('g', "(b1,(b2,(b3,b4)))");
+	Tree G3('g', "(c1,(c2,(c3,c4)))");
 	G1.setLabel("G1");
 	G2.setLabel("G2");
 	G3.setLabel("G3");
 	cout << "S:\n" << S << "G1:\n" << G1 << "G2:\n" << G2 << "G3:\n" << G3 << endl;
-	NodeMap Assocs1(&S, &G1, "a1:A a2:A a3:A a4:A a5:A a6:A");
+	NodeMap Assocs1(&S, &G1, "a1:A a2:A a3:A a4:A");
 	CophyMap M1(Assocs1);
 	G1.setInfo(M1.getInfo());
 	G1.setShowInfo(true);
-	NodeMap Assocs2(&S, &G2, "b1:B b2:B b3:B b4:B b5:B b6:B");
+	NodeMap Assocs2(&S, &G2, "b1:B b2:B b3:B b4:B");
 	CophyMap M2(Assocs2);
 	G2.setInfo(M2.getInfo());
 	G2.setShowInfo(true);
 
-	NodeMap Assocs3(&S, &G3, "c1:C c2:C c3:C c4:C c5:C c6:C");
+	NodeMap Assocs3(&S, &G3, "c1:C c2:C c3:C c4:C");
 	CophyMap M3(Assocs3);
 	G3.setInfo(M3.getInfo());
 	G3.setShowInfo(true);
@@ -738,7 +751,27 @@ void doAlgorithmTest2() {
 	CMM.addCophyMap(&M3);
 	lossCost = 0.1;
 	duplicationCost = 1.0;
-	Algorithm1(CMM);
+	map<string, int> sampledDistribution;
+	Algorithm1(CMM, sampledDistribution);
+}
+
+void doAlgorithmTest3() {
+	CophyMultiMap CMM;
+	cout << "Test case 1 (trivial match)" << endl;
+	Tree T1("(A,(B,C))");
+	Tree S1("(a,(b,c))");
+	T1.setLabel("T1");
+	S1.setLabel("S1");
+	S1.setShowInfo(true);
+	NodeMap assocs1(&T1, &S1, "a:A b:B c:C");
+	CophyMap M1(assocs1);
+	S1.setInfo(M1.getInfo());	// XXX TODO The code breaks (possibly on displaying the map) if info is not set.
+	CMM.addCophyMap(&M1);
+	cout << CMM;
+	lossCost = 0.1;
+	duplicationCost = 1.0;
+	map<string, int> sampledDistribution;
+	Algorithm1(CMM, sampledDistribution);
 }
 
 void doContenderTest() {
@@ -765,7 +798,81 @@ void doContenderTest() {
  * TODO do minimal cost cophymap (image of parents mapped to LCA of images of all children)
  */
 
-int main(int argc, char** argv) {
+string segdupHelp("SegDup Help:\n"
+		"\t>./segdup [options]\n"
+		"\t? or -h\n\t\tto print this help message\n"
+		"\t-S <newickformatspeciestree>\n"
+		"\t\tNote that the species tree MUST be defined BEFORE the gene trees else the program will crash.\n"
+		"\t\tAlso note that you MUST put trees in matched quotes if invoking from the command-line.\n"
+		"\t-G <newickformatgenetree> <leafassociations>\n"
+		"\t\tAssociation list MUST be a quoted string of space-separated pairs such as 'p:A q:B' to mean\n"
+		"\t\tgene p is on species leaf A, and gene q is on species leaf B.\n"
+		"\t-n <int>\n\t\tto supply the number of steps for Algorithm 1\n"
+		"\t-Tinit <float>\n\t\tto supply the initial temperature\n"
+		"\t-d <float>\n\t\tto set the duplication event cost\n"
+		"\t-l <float>\n\t\tto set the loss event cost\n."
+	);
+int main(int argn, char** argv) {
+	if (argn <= 1) {
+		cout << segdupHelp << endl;
+		return 0;
+	}
+	CophyMultiMap CMM;
+	vector<CophyMap*> M;
+	uint numGeneTrees(0);
+	Tree *S(nullptr);
+	vector<Tree*> G;
+	for (int i(1); i < argn; ++i) {
+		if (!strcmp(argv[i], "?") || !strcmp(argv[i], "-h")) {
+			cout << segdupHelp;
+			return 0;
+		}
+		if (!strcmp(argv[i], "-S")) {
+			++i;
+			string newick(argv[i]);
+			S = new Tree('s', newick);
+			S->setLabel("S");
+			cout << "Input Species tree:" << endl << (*S) << endl;
+		} else if (!strcmp(argv[i], "-G")) {
+			++numGeneTrees;
+			++i;
+			string newick(argv[i]);
+			G.push_back(new Tree('g', newick));
+			Tree *P = G[numGeneTrees-1];
+			P->setLabel("G" + to_string(numGeneTrees));
+			cout << "Input Gene tree:" << endl << (*P) << endl;
+			++i;
+			string assoc(argv[i]);
+			NodeMap* A = new NodeMap(S, P, assoc);
+			cout << "Input Associations:" << endl << (*A) << endl;
+			CophyMap* M = new CophyMap(*A);
+			P->setInfo(M->getInfo());
+			P->setShowInfo(true);
+			CMM.addCophyMap(M);
+		} else if (!strcmp(argv[i], "-n")) {
+			++i;
+			nSteps = atoi(argv[i]);
+			cout << "Setting Number of steps to " << nSteps << endl;
+		} else if (!strcmp(argv[i], "-d")) {
+			++i;
+			duplicationCost = atof(argv[i]);
+			cout << "Setting DuplicationCost to " << duplicationCost << endl;
+			CMM.setDuplicationCost(duplicationCost);
+		} else if (!strcmp(argv[i], "-l")) {
+			++i;
+			lossCost = atof(argv[i]);
+			CMM.setLossCost(lossCost);	// TODO Settle on either a global variable for this cost or just the instance variable!
+			cout << "Setting LossCost to " << lossCost << endl;
+		} else if (!strcmp(argv[i], "-Tinit")) {
+			++i;
+			Tinitial = atof(argv[i]);
+			cout << "Setting Initial Temperature to " << Tinitial << endl;
+		}
+	}
+	cout << hline;
+	CMM.doPageReconciliation();
+	map<string, int> sampledDistribution;
+	Algorithm1(CMM, sampledDistribution);
 //	bool _debugging(true);
 
 //	testPageReconciliation2();
@@ -775,7 +882,7 @@ int main(int argc, char** argv) {
 //	testDuplicationHeight();
 //	ybcTestCases();
 
-	doAlgorithmTest2();
+//	doAlgorithmTest2();
 //	doContenderTest();
 	//	cout << exp(-31.0) << endl;
 

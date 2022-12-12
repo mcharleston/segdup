@@ -70,13 +70,13 @@ std::set<pair<Node*, eventType>> CophyMap::calcAvailableNewHosts(Node* p) {
 	for (Node* n = bottom; n != top; n = n->getParent()) {
 		avail.insert(make_pair(n, duplication));
 	}
-	if (p->hasParent()) {
+//	if (p->hasParent()) {
 //		if (getHost(p->getParent()) == top && event[p->getParent()] == duplication) {
 //			avail.insert(make_pair(top, duplication));
 //		}
-	} else {
+//	} else {
 		avail.insert(make_pair(top, duplication));
-	}
+//	}
 	if (_addCodivergence) {
 		avail.insert(nuCodiv);
 	}

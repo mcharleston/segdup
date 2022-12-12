@@ -33,6 +33,7 @@ Tree::Tree(char pre, std::string str) : root(nullptr), labelSpace(0), numVertice
 	}
 }
 Tree::Tree(std::string str) : root(nullptr), labelSpace(0), numVertices(-1) {
+	prefix = 'v';
 	if (str[0] == '(') {
 		constructFromNewickString(str);
 		calculateHeights(root);
@@ -80,8 +81,13 @@ void Tree::compressTraverseWrite(ostream& os) {
 		calculateHeights(root);
 	}
 	DEBUG(cout << "Address of info map = " << &info << endl);
+	bool _oldShowInfo(_showInfo);
+	if (info == nullptr) {
+		_showInfo = false;
+	}
 	labelSpace = getMaxLabelWidth(root);
 	compressTraverseWrite(os, root);
+	_showInfo = _oldShowInfo;
 }
 void Tree::compressTraverseWrite(ostream & os, Node* p) {
 	int

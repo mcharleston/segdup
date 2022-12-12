@@ -38,6 +38,10 @@ public:
 
 	std::map<Tree*, CophyMap*>& getMaps() { return maps; }
 
+	inline void setDuplicationCost(double d) { duplicationCost = d; }
+	inline void setLossCost(double l) { lossCost = l; }
+	void toCompactString(std::string& str);
+
 };
 
 std::ostream& operator<<(std::ostream& os, CophyMultiMap& CMM);

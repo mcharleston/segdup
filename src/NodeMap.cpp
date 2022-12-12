@@ -116,10 +116,10 @@ void NodeMap::setPHAssociation(const std::string& pstr, const std::string& hstr,
 }
 
 ostream& operator<<(ostream& os, NodeMap& NM) {
-	os << "P -> H" << endl;
+//	os << "P -> H" << endl;
 	for (auto d : NM.getData()) {
-		os << d.first->getLabel() << " -> (" << d.second->getLabel();
-		os << ',' << d.second << ')' << endl;
+		os << d.first->getLabel() << ":" << d.second->getLabel() << endl;
+//		os << ',' << d.second << ')' << endl;
 	}
 	return os;
 }

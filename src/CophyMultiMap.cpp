@@ -139,19 +139,42 @@ void CophyMultiMap::doPageReconciliation() {
 	}
 }
 
+void CophyMultiMap::toCompactString(string & str) {
+	EventCount ec = countEvents();
+	str = to_string(ec.dups) + " dups + " + to_string(ec.losses) + " losses; score=";
+	str += to_string(ec.dups * duplicationCost + ec.losses*lossCost);
+	str += "\t";
+	Node *p;
+	Node *h;
+	for (auto mpr : maps) {
+		CophyMap *M = mpr.second;
+		NodeMap& phi = M->getPhi();
+		for (auto m : phi.getData()) {
+			p = m.first;
+			if (p->isLeaf()) {
+				continue;
+			}
+			h = m.second;
+			str += p->getLabel() + ":[" + eventSymbol[M->getEvent(p)] + "]" + h->getLabel() + ",";
+		}
+	}
+}
+
 ostream& operator<<(ostream& os, CophyMultiMap& CMM) {
 	os << "CophyMultiMap of " << endl;
 	Tree* H(nullptr);
 	auto mitr = CMM.getMaps().begin();
 	H = mitr->second->getHostTree();
 	for (auto mpr : CMM.getMaps()) {
-		os << '\t' << mpr.first->getLabel() << ":->" << mpr.second->getHostTree()->getLabel() << endl;
+		os << '\t' << mpr.first->getLabel() << "->" << mpr.second->getHostTree()->getLabel() << endl;
 	}
 	os << H->getLabel() << endl << *H;
 	for (auto mpr : CMM.getMaps()) {
 		mpr.first->setShowInfo(true);
 		os << mpr.first->getLabel() << endl << *(mpr.first);
 	}
+	os << "{Key: duplication marked by [" << eventSymbol[duplication] << "]; codivergence by ["
+			<< eventSymbol[codivergence] << "].}" << endl;
 	return os;
 }
 
