@@ -30,6 +30,7 @@ using namespace segdup;
 
 bool _debugging(true);
 bool _silent(false);
+bool _outputProbabilities(false);
 int nSteps(1000);
 double Tinitial(10.0);
 
@@ -302,7 +303,7 @@ void testDuplicationHeight() {
 }
 
 void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
-	bool _debugging(false);
+	bool _debugging(true);
 	DEBUG(cout << hline << "Algorithm1" << endl << hline);
 	DEBUG(cout << "Input multi-map:" << endl << CMM);
 	CMM.doPageReconciliation();
@@ -334,8 +335,12 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 	cout << "ORIGINAL MAP:" << endl << CMM << endl << ecoriginal << endl;
 	cout << "initial CSD: " << CSD(ecoriginal) << endl;
 	string mapDescription;
+	string bestMMap;
+	EventCount bestEventCount;
+	double bestCost(1e100);	// 10^100 should be enough!!
 	for (int t(0); t < nSteps; ++t) {
 		int nullMoves(0);
+		EventCount ec;
 		T = Tinitial*(1.0 - (1.0 * t / nSteps));
 		for (auto mpr : CMM.getMaps()) {
 			CophyMap* M = mpr.second;
@@ -356,7 +361,12 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //						DEBUG(cout << "No change: " << p->getLabel() << " staying on " << a.first->getLabel() << endl);
 //						DEBUG(cout << "Combined event counts: " << ecoriginal << "; cost = " << CSD(ecoriginal) << endl);
 //						DEBUG(cout << "Probability of sampling proportional to: " << exp(-CSD(ecoriginal) / T) << endl);
-						Contender noChange( exp(-CSD(ecoriginal)/T), p, a.first, a.second, M );
+
+
+						ec = CMM.countEvents();
+						double score = exp(-CSD(ec) / (1.0*T));
+						Contender noChange( score, p, a.first, a.second, M );
+
 						noChange._noMove = true;
 						noChange.setLabel("leaving " + p->getLabel() + " on [" + eventSymbol[a.second] + "]" + a.first->getLabel());
 
@@ -370,12 +380,13 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 						Node* oldHost = M->getHost(p);
 						eventType oldEvent = M->getEvent(p);
 						M->moveToHost(p, a.first, a.second);
-						EventCount ec = CMM.countEvents();
+						ec = CMM.countEvents();
 //						DEBUG(cout << "New event counts: " << ec << endl);
 						Association ass(p, a.first, a.second);
 						double score = exp(-CSD(ec) / (1.0*T));
 						Contender con( score, p, a.first, a.second, M );
-						con.setLabel("moving " + p->getLabel() + " to [" + eventSymbol[a.second] + "]" + a.first->getLabel());
+						string label = "moving " + p->getLabel() + " to [" + eventSymbol[a.second] + "]" + a.first->getLabel();
+						con.setLabel(label);
 						neighbours.insert(con);
 //						DEBUG(cout << "Complete Multi-Map:" << CMM << "Total multi-map event counts: " << ec << endl);
 //						DEBUG(cout << "Probability of sampling proportional to: " << con.getScore() << endl);
@@ -442,6 +453,13 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 						}
 						CMM.toCompactString(mapDescription);
 						sampledDistribution[mapDescription] += 1;
+						ec = CMM.getEventCount(mapDescription);
+						double cost = CSD(ec);
+						if (cost < bestCost) {
+							bestCost = cost;
+							bestEventCount = ec;
+							bestMMap = mapDescription;
+						}
 						DEBUG(cout << nei.getLabel() << '\t' << nei.getScore() << endl);
 						break;
 					}
@@ -454,14 +472,24 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 		}
 	}
 	cout << hline << "Sampled Distribution of Solutions:" << endl
-			<< "Event Counts; Score\tInternal images\tnumSamples/" << nSteps << endl;
+			<< "Event Counts; Score";
+	cout << "\t";
+//	if (_outputProbabilities) {
+//		cout << "\tProb";
+//	}
+	cout << "\tnumSamples/" << nSteps << endl;
 	for (auto dis : sampledDistribution) {
-		cout << dis.first << '\t' << dis.second << endl;
+//		cout << "Looking for event count for this map: " << dis.first << endl;
+		EventCount ec = CMM.getEventCount(dis.first);
+		cout << ec << '\t' << dis.first << "\t" << dis.second << endl;
 	}
 	cout << hline << "FINAL Multiple CophyMap found by Algorithm 1:" << endl;
 	EventCount ecFinal(CMM.countEvents());
 	cout << CMM << ecFinal << endl << hline << endl;
 	cout << "final CSD: " << CSD(ecFinal) << endl;
+	cout << hline << "BEST Multiple CophyMap found by Algorithm 1:" << endl;
+	cout << bestEventCount << '\t' << bestMMap << '\t' << bestCost << endl;
+
 }
 
 void doTestCase1() {
@@ -810,7 +838,7 @@ string segdupHelp("SegDup Help:\n"
 		"\t-n <int>\n\t\tto supply the number of steps for Algorithm 1\n"
 		"\t-Tinit <float>\n\t\tto supply the initial temperature\n"
 		"\t-d <float>\n\t\tto set the duplication event cost\n"
-		"\t-l <float>\n\t\tto set the loss event cost\n."
+		"\t-l <float>\n\t\tto set the loss event cost.\n"
 	);
 int main(int argn, char** argv) {
 	if (argn <= 1) {
@@ -867,6 +895,11 @@ int main(int argn, char** argv) {
 			++i;
 			Tinitial = atof(argv[i]);
 			cout << "Setting Initial Temperature to " << Tinitial << endl;
+		} else if (!strcmp(argv[i], "-o")) {
+			++i;
+			if (!strcmp(argv[i], "probs")) {
+				_outputProbabilities = true;
+			}
 		}
 	}
 	cout << hline;

@@ -33,7 +33,8 @@ EventCount& EventCount::operator=(const EventCount &other) {
 }
 
 std::ostream& operator<<(std::ostream& os, const EventCount& ec) {
-	os << "codivs=" << ec.codivs << "; dups=" << ec.dups << "; losses=" << ec.losses;
+//	os << "codivs=" << ec.codivs << "; ";
+	os << ec.dups << " dups, " << ec.losses << " losses";
 	return os;
 }
 

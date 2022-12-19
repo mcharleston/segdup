@@ -19,6 +19,7 @@ const double defLossCost(0.0);
 class CophyMultiMap {
 private:
 	std::map<Tree*, CophyMap*> maps; // Parasite tree -> Map
+	std::map<std::string, EventCount> mmEventCounts;
 	inversenodemap invMap;
 	double duplicationCost;
 	double lossCost;
@@ -36,9 +37,13 @@ public:
 
 //	CophyMap*& operator[](Tree* P) { return maps[P]; }
 
+	void toShortDescription(std::string& str);
+
+	EventCount getEventCount(const std::string& mapDescription);
 	std::map<Tree*, CophyMap*>& getMaps() { return maps; }
 
 	inline void setDuplicationCost(double d) { duplicationCost = d; }
+	inline void storeEventCount(const std::string& label, const EventCount& ec) { mmEventCounts[label] = ec; }
 	inline void setLossCost(double l) { lossCost = l; }
 	void toCompactString(std::string& str);
 

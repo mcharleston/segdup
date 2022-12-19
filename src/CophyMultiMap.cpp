@@ -76,6 +76,14 @@ EventCount CophyMultiMap::countEvents() {
 	EventCount E;
 	Tree *H;
 	Node *p, *h;
+	bool _cacheEventCounts(true);
+	string description;
+	if	(_cacheEventCounts) {
+		toCompactString(description);
+		if (mmEventCounts.find(description) != mmEventCounts.end()) {
+			return mmEventCounts[description];
+		}
+	}
 	int nLosses;
 	DEBUG(cout << "CophyMultiMap:countEvents()\n");
 	for (auto mpr : maps) {
@@ -126,7 +134,14 @@ EventCount CophyMultiMap::countEvents() {
 		countedHosts.insert(iter.second);
 		// XXX assumes all segmental duplications are permitted -- everything is adjacent!
 	}
+	if (_cacheEventCounts) {
+		storeEventCount(description, E);
+	}
 	return E;
+}
+
+EventCount CophyMultiMap::getEventCount(const std::string& mapDescription) {
+	return mmEventCounts.at(mapDescription);
 }
 
 void CophyMultiMap::doPageReconciliation() {
@@ -140,10 +155,11 @@ void CophyMultiMap::doPageReconciliation() {
 }
 
 void CophyMultiMap::toCompactString(string & str) {
-	EventCount ec = countEvents();
-	str = to_string(ec.dups) + " dups + " + to_string(ec.losses) + " losses; score=";
-	str += to_string(ec.dups * duplicationCost + ec.losses*lossCost);
-	str += "\t";
+	str = "";
+//	EventCount ec = countEvents();
+//	str = to_string(ec.dups) + " dups + " + to_string(ec.losses) + " losses; score=";
+//	str += to_string(ec.dups * duplicationCost + ec.losses*lossCost);
+//	str += "\t";
 	Node *p;
 	Node *h;
 	for (auto mpr : maps) {

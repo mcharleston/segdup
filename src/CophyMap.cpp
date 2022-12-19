@@ -38,7 +38,7 @@ CophyMap::CophyMap(const CophyMap &other) {
 std::set<pair<Node*, eventType>> CophyMap::calcAvailableNewHosts(Node* p) {
 	// can go up to same vertex to which parent is mapped, and down to the LCA of there the children are mapped.
 	//
-	bool _debugging(false);
+	bool _debugging(true);
 	DEBUG(cout << "Calculating available hosts for node " << p->getLabel() << ":" << endl);
 	std::set<pair<Node*, eventType>> avail;
 	Node* bottom;
@@ -70,13 +70,16 @@ std::set<pair<Node*, eventType>> CophyMap::calcAvailableNewHosts(Node* p) {
 	for (Node* n = bottom; n != top; n = n->getParent()) {
 		avail.insert(make_pair(n, duplication));
 	}
-//	if (p->hasParent()) {
+	if (p->hasParent()) {
+		if (event[p->getParent()] == duplication) {
+			avail.insert(make_pair(top, duplication));
+			DEBUG(cout << "Adding top potential location: duplication at " << top->getLabel() << endl);
+		}
+	} else {
 //		if (getHost(p->getParent()) == top && event[p->getParent()] == duplication) {
-//			avail.insert(make_pair(top, duplication));
+			avail.insert(make_pair(top, duplication));
 //		}
-//	} else {
-		avail.insert(make_pair(top, duplication));
-//	}
+	}
 	if (_addCodivergence) {
 		avail.insert(nuCodiv);
 	}
