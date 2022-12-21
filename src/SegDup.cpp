@@ -12,6 +12,7 @@
 #include <map>
 #include <random>
 #include <sstream>
+#include <fstream>
 #include <stdio.h>
 
 #include "Node.h"
@@ -32,6 +33,7 @@ using namespace segdup;
 bool _debugging(true);
 bool _silent(false);
 bool _outputProbabilities(false);
+bool _saveTrace(false);
 bool _showSampledDistribution(false);
 int nSteps(1000);
 double Tinitial(10.0);
@@ -341,16 +343,23 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 	string bestMMap;
 	EventCount bestEventCount;
 	double bestCost(1e100);	// 10^100 should be enough!!
+	ofstream ftrace;
+	int sampleNumber(0);
+	if (_saveTrace) {
+		ftrace.open("segdup-trace.csv", std::ofstream::out);
+	}
 	ostringstream bestPrettyMap;
+
 	for (int t(0); t < nSteps; ++t) {
 		int nullMoves(0);
 		EventCount ec;
 		T = Tinitial*(1.0 - (1.0 * t / nSteps));
+		double total(0.0);
+		neighbours.clear();
 		for (auto mpr : CMM.getMaps()) {
 			CophyMap* M = mpr.second;
 //			DEBUG(cout << hline << "ORIGINAL MAP:" << (*M));
 			for (Node* p : iV[M]) {
-				neighbours.clear();
 				set<pair<Node*, eventType>> nextImages = M->calcAvailableNewHosts(p);
 				DEBUG(
 					cout << "Node " << p->getLabel() << " has possible images { ";
@@ -395,7 +404,6 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //					DEBUG(cout << "Probability of sampling proportional to: " << con.getScore() << endl);
 					M->moveToHost(p, oldHost, oldEvent);
 				}
-				double total(0.0);
 				for (auto nei : neighbours) {
 					total += nei.getScore();
 				}
@@ -414,42 +422,46 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //						}
 //						cout << endl
 //						);
-				double r = dran(total);
-				DEBUG(cout << "Total probability proportional to " << total << endl);
-				for (auto nei : neighbours) {
+			}
+//				DEBUG(cout << endl);
+		}
+		double r = dran(total);
+		DEBUG(cout << "Total probability proportional to " << total << endl);
+		for (auto nei : neighbours) {
 //					DEBUG(cout << "This neighbour has score " << nei.getScore() << endl);
-					if (r <= nei.getScore()) {
-						if (nei._noMove) {
-							DEBUG(cout << "Selected move: No change (probability = " << (nei.getScore()/total) << ")" << endl);
-						} else {
-							// sample this one
-							DEBUG(cout << "Selected move: " << nei.getLabel() << " (probability = " << (nei.getScore()/total) << ")" << endl);
-							nei.getMap()->moveToHost(nei.getParasite(), nei.getHost(), nei.getEvent());
-							nei.getMap()->checkValidHostOrdering();
-							DEBUG(cout << (*M));
+			if (r <= nei.getScore()) {
+				if (nei._noMove) {
+					DEBUG(cout << "Selected move: No change (probability = " << (nei.getScore()/total) << ")" << endl);
+				} else {
+					// sample this one
+					DEBUG(cout << "Selected move: " << nei.getLabel() << " (probability = " << (nei.getScore()/total) << ")" << endl);
+					nei.getMap()->moveToHost(nei.getParasite(), nei.getHost(), nei.getEvent());
+					nei.getMap()->checkValidHostOrdering();
+					DEBUG(cout << (*M));
 //							DEBUG(cout << nei.getLabel() << endl << *(nei.getMap()->getParasiteTree()));
 //							DEBUG(cout << t << '\t' << nei.getLabel() << endl);
-						}
-						CMM.toCompactString(mapDescription);
-						sampledDistribution[mapDescription] += 1;
-						ec = CMM.getEventCount(mapDescription);
-						double cost = CSD(ec);
-						if (cost < bestCost) {
-							bestCost = cost;
-							bestEventCount = ec;
-							bestMMap = mapDescription;
-							bestPrettyMap.str("");
-							bestPrettyMap << CMM;
-						}
-						DEBUG(cout << nei.getLabel() << '\t' << nei.getScore() << endl);
-						break;
-					}
-//					DEBUG(cout << "r reducing from " << r);
-					r -= nei.getScore();
-//					DEBUG(cout << " to " << r << endl);
 				}
-//				DEBUG(cout << endl);
+				CMM.toCompactString(mapDescription);
+				sampledDistribution[mapDescription] += 1;
+				ec = CMM.getEventCount(mapDescription);
+				double cost = CSD(ec);
+				if (cost < bestCost) {
+					bestCost = cost;
+					bestEventCount = ec;
+					bestMMap = mapDescription;
+					bestPrettyMap.str("");
+					bestPrettyMap << CMM;
+				}
+				if (_saveTrace) {
+					++sampleNumber;
+					ftrace << sampleNumber << ",\"" << mapDescription << "\"," << to_string(CSD(ec)) << endl;
+				}
+				DEBUG(cout << nei.getLabel() << '\t' << nei.getScore() << endl);
+				break;
 			}
+//					DEBUG(cout << "r reducing from " << r);
+			r -= nei.getScore();
+//					DEBUG(cout << " to " << r << endl);
 		}
 	}
 	if (_showSampledDistribution) {
@@ -468,6 +480,9 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 	cout << bestEventCount << '\t' << bestCost << '\t' << bestMMap << '\t' << endl;
 	cout << bestPrettyMap.str();
 	cout << hline << endl;
+	if (_saveTrace) {
+		ftrace.close();
+	}
 }
 
 void doTestCase1() {
@@ -883,6 +898,9 @@ int main(int argn, char** argv) {
 			} else if (!strcmp(argv[i], "samples")) {
 				cout << "Setting Show_Samples to true" << endl;
 				_showSampledDistribution = true;
+			} else if (!strcmp(argv[i], "trace")) {
+				cout << "Setting Save a Trace to true" << endl;
+				_saveTrace = true;
 			}
 		}
 	}
