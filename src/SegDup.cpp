@@ -452,12 +452,12 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					bestPrettyMap.str("");
 					bestPrettyMap << CMM;
 				}
-				if (_saveTrace) {
-					++sampleNumber;
-					ftrace << sampleNumber << ",\"" << mapDescription << "\"," << to_string(CSD(ec)) << endl;
-				}
 				DEBUG(cout << nei.getLabel() << '\t' << nei.getScore() << endl);
 				break;
+			}
+			if (_saveTrace) {
+				++sampleNumber;
+				ftrace << sampleNumber << ",\"" << mapDescription << "\"," << to_string(CSD(ec)) << endl;
 			}
 //					DEBUG(cout << "r reducing from " << r);
 			r -= nei.getScore();
