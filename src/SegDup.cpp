@@ -459,6 +459,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 							bestCost = cost;
 							bestEventCount = ec;
 							bestMMap = mapDescription;
+							cout << CMM;
 						}
 						DEBUG(cout << nei.getLabel() << '\t' << nei.getScore() << endl);
 						break;
@@ -471,22 +472,25 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 			}
 		}
 	}
-	cout << hline << "Sampled Distribution of Solutions:" << endl
-			<< "Event Counts; Score";
-	cout << "\t";
-//	if (_outputProbabilities) {
-//		cout << "\tProb";
-//	}
-	cout << "\tnumSamples/" << nSteps << endl;
-	for (auto dis : sampledDistribution) {
-//		cout << "Looking for event count for this map: " << dis.first << endl;
-		EventCount ec = CMM.getEventCount(dis.first);
-		cout << ec << '\t' << dis.first << "\t" << dis.second << endl;
+	bool _verbose(false);
+	if (_verbose) {
+		cout << hline << "Sampled Distribution of Solutions:" << endl
+				<< "Event Counts; Score";
+		cout << "\t";
+//		if (_outputProbabilities) {
+//			cout << "\tProb";
+//		}
+		cout << "\tnumSamples/" << nSteps << endl;
+		for (auto dis : sampledDistribution) {
+//			cout << "Looking for event count for this map: " << dis.first << endl;
+			EventCount ec = CMM.getEventCount(dis.first);
+			cout << ec << '\t' << dis.first << "\t" << dis.second << endl;
+		}
+		cout << hline << "FINAL Multiple CophyMap found by Algorithm 1:" << endl;
+		EventCount ecFinal(CMM.countEvents());
+		cout << CMM << ecFinal << endl << hline << endl;
+		cout << "final CSD: " << CSD(ecFinal) << endl;
 	}
-	cout << hline << "FINAL Multiple CophyMap found by Algorithm 1:" << endl;
-	EventCount ecFinal(CMM.countEvents());
-	cout << CMM << ecFinal << endl << hline << endl;
-	cout << "final CSD: " << CSD(ecFinal) << endl;
 	cout << hline << "BEST Multiple CophyMap found by Algorithm 1:" << endl;
 	cout << bestEventCount << '\t' << bestMMap << '\t' << bestCost << endl;
 
