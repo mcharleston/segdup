@@ -174,6 +174,7 @@ void CophyMultiMap::toCompactString(string & str) {
 			str += p->getLabel() + ":[" + eventSymbol[M->getEvent(p)] + "]" + h->getLabel() + ",";
 		}
 	}
+	str.pop_back();
 }
 
 ostream& operator<<(ostream& os, CophyMultiMap& CMM) {

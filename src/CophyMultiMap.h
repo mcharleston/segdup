@@ -14,7 +14,7 @@
 namespace segdup {
 
 const double defDuplicationCost(10.0);
-const double defLossCost(0.0);
+const double defLossCost(1.0);
 
 class CophyMultiMap {
 private:
@@ -37,7 +37,7 @@ public:
 
 //	CophyMap*& operator[](Tree* P) { return maps[P]; }
 
-	void toShortDescription(std::string& str);
+//	void toShortDescription(std::string& str);
 
 	EventCount getEventCount(const std::string& mapDescription);
 	std::map<Tree*, CophyMap*>& getMaps() { return maps; }
