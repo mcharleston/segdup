@@ -38,6 +38,8 @@ bool _saveTrace(false);
 bool _showSampledDistribution(false);
 int nSteps(1000);
 double Tinitial(2.0);
+double SATempSpread(100);
+double SATempDecay(4);
 
 unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 
@@ -366,7 +368,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 		T = Tinitial*2/(1.0+sqrt(t*t*x+1.0));
 		double paramA(4.4);
 		double paramB(400.0);
-		T = Tinitial*(1.0 / (1.0 + log(1 + pow(t/paramB, paramA))));
+		T = Tinitial*(1.0 / (1.0 + log(1 + pow(t/SATempSpread, SATempDecay))));
 		double total(0.0);
 		neighbours.clear();
 		for (auto mpr : CMM.getMaps()) {
@@ -870,6 +872,10 @@ string segdupHelp("SegDup Help:\n"
 		"\t-l <float>\n\t\tto set the loss event cost (default value "
 		+ to_string(lossCost) + ")\n"
 		"\t-o (samples)\n\t\tto show the sampled maps (default value false).\n"
+		"\t--sat-spread <float>\n\t\tto set the Simulated Annealing \"spread\" parameter (default value "
+		+ to_string(SATempSpread) + ")\n"
+		"\t--sat-decay <float>\n\t\tto set the Simulated Annealing \"decay\" parameter (default value "
+		+ to_string(SATempDecay) + ")\n"
 	);
 int main(int argn, char** argv) {
 	if (argn <= 1) {
@@ -937,6 +943,14 @@ int main(int argn, char** argv) {
 				cout << "Setting Save a Trace to true" << endl;
 				_saveTrace = true;
 			}
+		} else if (!strcmp(argv[i], "--sat-spread")) {
+			++i;
+			SATempSpread = atof(argv[i]);
+			cout << "Setting Simulated Annealing \"spread\" parameter to " << SATempSpread << endl;
+		} else if (!strcmp(argv[i], "--sat-decay")) {
+			++i;
+			SATempDecay = atof(argv[i]);
+			cout << "Setting Simulated Annealing \"decay\" parameter to " << SATempDecay << endl;
 		}
 	}
 	cout << hline;
