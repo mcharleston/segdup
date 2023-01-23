@@ -21,6 +21,7 @@
 #include "CophyMultiMap.h"
 #include "Contender.h"
 
+#include "../utility/appexception.h"
 #include "../utility/debugging.h"
 
 /**
@@ -36,7 +37,7 @@ bool _outputProbabilities(false);
 bool _saveTrace(false);
 bool _showSampledDistribution(false);
 int nSteps(1000);
-double Tinitial(10.0);
+double Tinitial(2.0);
 
 unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 
@@ -58,7 +59,7 @@ uint plran(float l, float u, float r) {
 	return static_cast<uint>( std::pow( std::pow(u,ex) - std::pow(l, ex)*y + std::pow(l, ex), 1.0/ex ) );
 }
 
-double lossCost(defLossCost);			// XXX
+double lossCost(defLossCost);						// XXX
 double duplicationCost(defDuplicationCost);	// XXX MAGIC number!
 
 double CSD(const EventCount& ec) {
@@ -334,6 +335,8 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 	}
 
 	double T(0.0);
+	double BoltzmannConst(1.3806503e-23);
+	double fudgeFactor(100.0);
 	std::set<Contender> neighbours;
 	EventCount ecoriginal = CMM.countEvents();
 	string mapDescription;
@@ -351,9 +354,19 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 	ostringstream bestPrettyMap;
 
 	for (int t(0); t < nSteps; ++t) {
+		DEBUG(cout << hline << "t = " << t << endl << hline << endl);
 		int nullMoves(0);
 		EventCount ec;
-		T = Tinitial*(1.0 - (1.0 * t / nSteps));
+
+		T = Tinitial*(1.0 - (1.0 * t / nSteps))*(1.0 - (1.0 * t / nSteps));
+		double x = 1.0 * t / nSteps;
+		double tempParam(2.5);
+		T = Tinitial*(exp(-tempParam * x * x * x));
+		T = Tinitial*(1.0/(1-sqrt(2)))*(1-sqrt(1.0 + 1.0/(1.0 +tempParam * x * x * x)));
+		T = Tinitial*2/(1.0+sqrt(t*t*x+1.0));
+		double paramA(4.4);
+		double paramB(400.0);
+		T = Tinitial*(1.0 / (1.0 + log(1 + pow(t/paramB, paramA))));
 		double total(0.0);
 		neighbours.clear();
 		for (auto mpr : CMM.getMaps()) {
@@ -377,7 +390,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 
 
 						ec = CMM.countEvents();
-						double score = exp(-CSD(ec) / (1.0*T));
+						double score = exp(-CSD(ec) / ( fudgeFactor *T));
 						Contender noChange( score, p, a.first, a.second, M );
 
 						noChange._noMove = true;
@@ -395,7 +408,10 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					ec = CMM.countEvents();
 //					DEBUG(cout << "New event counts: " << ec << endl);
 					Association ass(p, a.first, a.second);
-					double score = exp(-CSD(ec) / (1.0*T));
+					double score = exp(-1.0* CSD(ec) / (fudgeFactor *T));
+					DEBUG(cout << "CSD(ec) = " << CSD(ec) << endl);
+					DEBUG(cout << "Exponent = " << (-1.0 *CSD(ec) / (fudgeFactor * T)) << endl);
+					DEBUG(cout << "Score = " << score << endl);
 					Contender con( score, p, a.first, a.second, M );
 					string label = "moving " + p->getLabel() + " to [" + eventSymbol[a.second] + "]" + a.first->getLabel();
 					con.setLabel(label);
@@ -404,8 +420,10 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //					DEBUG(cout << "Probability of sampling proportional to: " << con.getScore() << endl);
 					M->moveToHost(p, oldHost, oldEvent);
 				}
+				total = 0.0;
 				for (auto nei : neighbours) {
 					total += nei.getScore();
+					DEBUG(cout << "total = " << total << endl);
 				}
 //				DEBUG(cout << "total score = " << total << endl);
 //				DEBUG(cout << "Summary of sampling options, events & costs:" << endl);
@@ -427,8 +445,11 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 		}
 		double r = dran(total);
 		DEBUG(cout << "Total probability proportional to " << total << endl);
+		if (neighbours.size() == 0) {
+			throw new app_exception("No neighbours at all!!");
+		}
 		for (auto nei : neighbours) {
-//					DEBUG(cout << "This neighbour has score " << nei.getScore() << endl);
+			DEBUG(cout << "This neighbour has score " << nei.getScore() << endl);
 			if (r <= nei.getScore()) {
 				if (nei._noMove) {
 					DEBUG(cout << "Selected move: No change (probability = " << (nei.getScore()/total) << ")" << endl);
@@ -437,7 +458,6 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					DEBUG(cout << "Selected move: " << nei.getLabel() << " (probability = " << (nei.getScore()/total) << ")" << endl);
 					nei.getMap()->moveToHost(nei.getParasite(), nei.getHost(), nei.getEvent());
 					nei.getMap()->checkValidHostOrdering();
-					DEBUG(cout << (*M));
 //							DEBUG(cout << nei.getLabel() << endl << *(nei.getMap()->getParasiteTree()));
 //							DEBUG(cout << t << '\t' << nei.getLabel() << endl);
 				}
@@ -453,15 +473,19 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					bestPrettyMap << CMM;
 				}
 				DEBUG(cout << nei.getLabel() << '\t' << nei.getScore() << endl);
+				if (_saveTrace) {
+					++sampleNumber;
+					ftrace << sampleNumber << ',';
+//					ftrace << mapDescription << "\",";
+					ftrace << T << ',';
+					ftrace << to_string(CSD(ec)) << endl;
+					DEBUG(cout << "\tSaving new sampled solution" << endl);
+				}
 				break;
 			}
-			if (_saveTrace) {
-				++sampleNumber;
-				ftrace << sampleNumber << ",\"" << mapDescription << "\"," << to_string(CSD(ec)) << endl;
-			}
-//					DEBUG(cout << "r reducing from " << r);
+			DEBUG(cout << "r reducing from " << r);
 			r -= nei.getScore();
-//					DEBUG(cout << " to " << r << endl);
+			DEBUG(cout << " to " << r << endl);
 		}
 	}
 	bool _verbose(false);
