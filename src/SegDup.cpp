@@ -37,7 +37,7 @@ bool _outputProbabilities(false);
 bool _saveTrace(false);
 bool _showSampledDistribution(false);
 int nSteps(1000);
-double Tinitial(2.0);
+double Tinitial(0.1);
 double SATempSpread(100);
 double SATempDecay(4);
 
@@ -352,6 +352,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 	int sampleNumber(0);
 	if (_saveTrace) {
 		ftrace.open("segdup-trace.csv", std::ofstream::out);
+		ftrace << "t,T,dups,losses,csd\n";
 	}
 	ostringstream bestPrettyMap;
 
@@ -360,15 +361,16 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 		int nullMoves(0);
 		EventCount ec;
 
-		T = Tinitial*(1.0 - (1.0 * t / nSteps))*(1.0 - (1.0 * t / nSteps));
-		double x = 1.0 * t / nSteps;
-		double tempParam(2.5);
-		T = Tinitial*(exp(-tempParam * x * x * x));
-		T = Tinitial*(1.0/(1-sqrt(2)))*(1-sqrt(1.0 + 1.0/(1.0 +tempParam * x * x * x)));
-		T = Tinitial*2/(1.0+sqrt(t*t*x+1.0));
-		double paramA(4.4);
-		double paramB(400.0);
-		T = Tinitial*(1.0 / (1.0 + log(1 + pow(t/SATempSpread, SATempDecay))));
+		T = Tinitial*(1.0 - (1.0 * t / nSteps)); // function 0 / linear
+//		T = Tinitial*(1.0 - (1.0 * t / nSteps))*(1.0 - (1.0 * t / nSteps)); // function 1 / linear2
+//		double x = 1.0 * t / nSteps;
+//		double tempParam(2.5);
+//		T = Tinitial*(exp(-tempParam * x * x * x));	// function 2 / exp3	// XXX not very good on ybc-case3
+//		T = Tinitial*(1.0/(1-sqrt(2)))*(1-sqrt(1.0 + 1.0/(1.0 +tempParam * x * x * x))); // function 3 / sqrts // XXX not very good on ybc-case3
+//		T = Tinitial*1.5/(1.0 + 0.2 * sqrt(x*x*t+1.0));	// function 4 / sqrts	// XXX looks good on ybc-case3 and on Guido et al..
+//		double paramA(4.4);
+//		double paramB(400.0);
+//		T = Tinitial*(1.0 / (1.0 + log(1 + pow(t/SATempSpread, SATempDecay)))); // function 5 / logpow
 		double total(0.0);
 		neighbours.clear();
 		for (auto mpr : CMM.getMaps()) {
@@ -390,9 +392,8 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //						DEBUG(cout << "Combined event counts: " << ecoriginal << "; cost = " << CSD(ecoriginal) << endl);
 //						DEBUG(cout << "Probability of sampling proportional to: " << exp(-CSD(ecoriginal) / T) << endl);
 
-
-						ec = CMM.countEvents();
-						double score = exp(-CSD(ec) / ( fudgeFactor *T));
+//						ec = CMM.countEvents();	// XXX should just use the old one
+						double score = exp(-CSD(ec) / ( fudgeFactor * T));
 						Contender noChange( score, p, a.first, a.second, M );
 
 						noChange._noMove = true;
@@ -406,8 +407,19 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //					DEBUG(cout << "Testing moving " << p->getLabel() << " to host " << eventSymbol[a.second] << a.first->getLabel() << endl);
 					Node* oldHost = M->getHost(p);
 					eventType oldEvent = M->getEvent(p);
+					int oldSourceDuplicationHeight = CMM.calcDuplicationHeight(oldHost);
+					int oldTargetDuplicationHeight = CMM.calcDuplicationHeight(a.first);
 					M->moveToHost(p, a.first, a.second);
+					CMM.invMap[p].erase(oldHost);
+					CMM.invMap[p].insert(a.first);
+					// do something here about checking the heights...
 					ec = CMM.countEvents();
+					/**
+					 * SPEEDUP ideas:
+					 * keep track of all tree duplication heights at this branch;
+					 * or that and the max. If the current one is lowering in height past this max then we have to recalculate the height
+					 * of this branch; otherwise we don't. Etc.
+					 */
 //					DEBUG(cout << "New event counts: " << ec << endl);
 					Association ass(p, a.first, a.second);
 					double score = exp(-1.0* CSD(ec) / (fudgeFactor *T));
@@ -480,6 +492,8 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					ftrace << sampleNumber << ',';
 //					ftrace << mapDescription << "\",";
 					ftrace << T << ',';
+					ftrace << ec.dups << ',';
+					ftrace << ec.losses << ',';
 					ftrace << to_string(CSD(ec)) << endl;
 					DEBUG(cout << "\tSaving new sampled solution" << endl);
 				}
