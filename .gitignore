@@ -40,3 +40,13 @@
 /segdupoutput-case7.txt
 /segdup-trace.csv
 /segdupoutput-tuesday.txt
+/GuidoEtalTest.txt
+/GuidoEtalTest2.txt
+/numbers-only-trace.csv
+/segdup-trace-function5-logpow.csv
+/log.txt
+
+# Output and other text files
+*.txt
+*.csv
+
