@@ -891,6 +891,7 @@ string segdupHelp("SegDup Help:\n"
 		"\t--sat-decay <float>\n\t\tto set the Simulated Annealing \"decay\" parameter (default value "
 		+ to_string(SATempDecay) + ")\n"
 	);
+
 int main(int argn, char** argv) {
 	if (argn <= 1) {
 		cout << segdupHelp << endl;

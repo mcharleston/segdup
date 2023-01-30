@@ -33,3 +33,10 @@
 /Release/
 /Debug/
 /QuickCompile/
+/.cproject
+/.project
+/.RData
+/.Rhistory
+/segdupoutput-case7.txt
+/segdup-trace.csv
+/segdupoutput-tuesday.txt
