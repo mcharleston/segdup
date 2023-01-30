@@ -50,3 +50,6 @@
 *.txt
 *.csv
 
+# Local Settings
+/.cproject
+/.settings/language.settings.xml
