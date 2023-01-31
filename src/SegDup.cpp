@@ -36,6 +36,7 @@ bool _silent(false);
 bool _outputProbabilities(false);
 bool _saveTrace(false);
 bool _showSampledDistribution(false);
+bool _verbose(false);
 int nSteps(1000);
 double Tinitial(0.1);
 double SATempSpread(100);
@@ -310,7 +311,7 @@ void testDuplicationHeight() {
 }
 
 void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
-	bool _debugging(true);
+	bool _debugging(false);
 	DEBUG(cout << hline << "Algorithm1" << endl << hline);
 	DEBUG(cout << "Input multi-map:" << endl << CMM);
 	CMM.doPageReconciliation();
@@ -337,7 +338,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 	}
 
 	double T(0.0);
-	double BoltzmannConst(1.3806503e-23);
+//	double BoltzmannConst(1.3806503e-23);
 	double fudgeFactor(100.0);
 	std::set<Contender> neighbours;
 	EventCount ecoriginal = CMM.countEvents();
@@ -407,11 +408,11 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //					DEBUG(cout << "Testing moving " << p->getLabel() << " to host " << eventSymbol[a.second] << a.first->getLabel() << endl);
 					Node* oldHost = M->getHost(p);
 					eventType oldEvent = M->getEvent(p);
-					int oldSourceDuplicationHeight = CMM.calcDuplicationHeight(oldHost);
-					int oldTargetDuplicationHeight = CMM.calcDuplicationHeight(a.first);
+//					int oldSourceDuplicationHeight = CMM.calcDuplicationHeight(oldHost);
+//					int oldTargetDuplicationHeight = CMM.calcDuplicationHeight(a.first);
 					M->moveToHost(p, a.first, a.second);
-					CMM.invMap[p].erase(oldHost);
-					CMM.invMap[p].insert(a.first);
+//					CMM.invMap[p].erase(oldHost);
+//					CMM.invMap[p].insert(a.first);
 					// do something here about checking the heights...
 					ec = CMM.countEvents();
 					/**
@@ -422,7 +423,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					 */
 //					DEBUG(cout << "New event counts: " << ec << endl);
 					Association ass(p, a.first, a.second);
-					double score = exp(-1.0* CSD(ec) / (fudgeFactor *T));
+					double score = exp(-1.0* CSD(ec) / (fudgeFactor * T));
 					DEBUG(cout << "CSD(ec) = " << CSD(ec) << endl);
 					DEBUG(cout << "Exponent = " << (-1.0 *CSD(ec) / (fudgeFactor * T)) << endl);
 					DEBUG(cout << "Score = " << score << endl);
@@ -504,14 +505,14 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 			DEBUG(cout << " to " << r << endl);
 		}
 	}
-	bool _verbose(false);
-	if (_verbose) {
+	bool _showDistribution(false);
+	if (_showDistribution) {
 		cout << hline << "Sampled Distribution of Solutions:" << endl
 				<< "Event Counts; Score";
 		cout << "\t";
 //		if (_outputProbabilities) {
 //			cout << "\tProb";
-//		}
+//		}Input Species tree:
 		cout << "\tnumSamples/" << nSteps << endl;
 		for (auto dis : sampledDistribution) {
 //			cout << "Looking for event count for this map: " << dis.first << endl;
@@ -527,10 +528,12 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //	EventCount ecFinal(CMM.countEvents());
 //	cout << CMM << ecFinal << endl << hline << endl;
 //	cout << "final CSD: " << CSD(ecFinal) << endl;
-	cout << hline << "BEST Multiple CophyMap found by Algorithm 1:" << endl;
-	cout << bestEventCount << '\t' << bestCost << '\t' << bestMMap << '\t' << endl;
-	cout << bestPrettyMap.str();
-	cout << hline << endl;
+//	if (_verbose) {
+		cout << hline << "BEST Multiple CophyMap found by Algorithm 1:" << endl;
+		cout << bestEventCount << '\t' << bestCost << '\t' << bestMMap << '\t' << endl;
+//		cout << bestPrettyMap.str();
+		cout << hline << endl;
+//	}
 	if (_saveTrace) {
 		ftrace.close();
 	}
@@ -877,19 +880,15 @@ string segdupHelp("SegDup Help:\n"
 		"\t-G <newickformatgenetree> <leafassociations>\n"
 		"\t\tAssociation list MUST be a quoted string of space-separated pairs such as 'p:A q:B' to mean\n"
 		"\t\tgene p is on species leaf A, and gene q is on species leaf B.\n"
-		"\t-n <int>\n\t\tto supply the number of steps for Algorithm 1 (default value "
-		+ to_string(nSteps) + ")\n"
-		"\t-Tinit <float>\n\t\tto supply the initial temperature (default value "
-		+ to_string(Tinitial) + ")\n"
-		"\t-d <float>\n\t\tto set the duplication event cost (default value "
-		+ to_string(duplicationCost) + ")\n"
-		"\t-l <float>\n\t\tto set the loss event cost (default value "
-		+ to_string(lossCost) + ")\n"
-		"\t-o (samples)\n\t\tto show the sampled maps (default value false).\n"
-		"\t--sat-spread <float>\n\t\tto set the Simulated Annealing \"spread\" parameter (default value "
-		+ to_string(SATempSpread) + ")\n"
-		"\t--sat-decay <float>\n\t\tto set the Simulated Annealing \"decay\" parameter (default value "
-		+ to_string(SATempDecay) + ")\n"
+		"\t-n <int>\n\t\tto supply the number of steps for Algorithm 1 (default: " + to_string(nSteps) + ")\n"
+		"\t-Tinit <float>\n\t\tto supply the initial temperature (default: " + to_string(Tinitial) + ")\n"
+		"\t-d <float>\n\t\tto set the duplication event cost (default: " + to_string(duplicationCost) + ")\n"
+		"\t-l <float>\n\t\tto set the loss event cost (default: " + to_string(lossCost) + ")\n"
+		"\t-o (samples)\n\t\tto show the sampled maps (default: FALSE).\n"
+		"\t--sat-spread <float>\n\t\tto set the Simulated Annealing \"spread\" parameter (default: " + to_string(SATempSpread) + ")\n"
+		"\t--sat-decay <float>\n\t\tto set the Simulated Annealing \"decay\" parameter (default: " + to_string(SATempDecay) + ")\n"
+		"\t--verbose\n\t\tto output lots of stuff (default: FALSE);\n"
+		"\t--silent\n\t\tto output as little as possible (default: FALSE);\n"
 	);
 
 int main(int argn, char** argv) {
@@ -912,7 +911,9 @@ int main(int argn, char** argv) {
 			string newick(argv[i]);
 			S = new Tree('s', newick);
 			S->setLabel("S");
-			cout << "Input Species tree:" << endl << (*S) << endl;
+			if (_verbose) {
+				cout << "Input Species tree:" << endl << (*S) << endl;
+			}
 		} else if (!strcmp(argv[i], "-G")) {
 			++numGeneTrees;
 			++i;
@@ -920,11 +921,15 @@ int main(int argn, char** argv) {
 			G.push_back(new Tree('g', newick));
 			Tree *P = G[numGeneTrees-1];
 			P->setLabel("G" + to_string(numGeneTrees));
-			cout << "Input Gene tree:" << endl << (*P) << endl;
+			if (_verbose) {
+				cout << "Input Gene tree:" << endl << (*P) << endl;
+			}
 			++i;
 			string assoc(argv[i]);
 			NodeMap* A = new NodeMap(S, P, assoc);
-			cout << "Input Associations:" << endl << (*A);
+			if (_verbose) {
+				cout << "Input Associations:" << endl << (*A);
+			}
 			CophyMap* M = new CophyMap(*A);
 			P->setInfo(M->getInfo());
 			P->setShowInfo(true);
@@ -932,40 +937,60 @@ int main(int argn, char** argv) {
 		} else if (!strcmp(argv[i], "-n")) {
 			++i;
 			nSteps = atoi(argv[i]);
-			cout << "Setting Number of steps to " << nSteps << endl;
+			if (_verbose) {
+				cout << "Setting Number of steps to " << nSteps << endl;
+			}
 		} else if (!strcmp(argv[i], "-d")) {
 			++i;
 			duplicationCost = atof(argv[i]);
-			cout << "Setting DuplicationCost to " << duplicationCost << endl;
+			if (_verbose) {
+				cout << "Setting DuplicationCost to " << duplicationCost << endl;
+			}
 			CMM.setDuplicationCost(duplicationCost);
 		} else if (!strcmp(argv[i], "-l")) {
 			++i;
 			lossCost = atof(argv[i]);
 			CMM.setLossCost(lossCost);	// TODO Settle on either a global variable for this cost or just the instance variable!
-			cout << "Setting LossCost to " << lossCost << endl;
+			if (_verbose) {
+				cout << "Setting LossCost to " << lossCost << endl;
+			}
 		} else if (!strcmp(argv[i], "-Tinit")) {
 			++i;
 			Tinitial = atof(argv[i]);
-			cout << "Setting Initial Temperature to " << Tinitial << endl;
+			if (_verbose) {
+				cout << "Setting Initial Temperature to " << Tinitial << endl;
+			}
 		} else if (!strcmp(argv[i], "-o")) {
 			++i;
 			if (!strcmp(argv[i], "probs")) {
 				_outputProbabilities = true;
 			} else if (!strcmp(argv[i], "samples")) {
-				cout << "Setting Show_Samples to true" << endl;
+				if (_verbose) {
+					cout << "Setting Show_Samples to true" << endl;
+				}
 				_showSampledDistribution = true;
 			} else if (!strcmp(argv[i], "trace")) {
-				cout << "Setting Save a Trace to true" << endl;
+				if (_verbose) {
+					cout << "Setting Save a Trace to true" << endl;
+				}
 				_saveTrace = true;
 			}
 		} else if (!strcmp(argv[i], "--sat-spread")) {
 			++i;
 			SATempSpread = atof(argv[i]);
-			cout << "Setting Simulated Annealing \"spread\" parameter to " << SATempSpread << endl;
+			if (_verbose) {
+				cout << "Setting Simulated Annealing \"spread\" parameter to " << SATempSpread << endl;
+			}
 		} else if (!strcmp(argv[i], "--sat-decay")) {
 			++i;
 			SATempDecay = atof(argv[i]);
-			cout << "Setting Simulated Annealing \"decay\" parameter to " << SATempDecay << endl;
+			if (_verbose) {
+				cout << "Setting Simulated Annealing \"decay\" parameter to " << SATempDecay << endl;
+			}
+		} else if (!strcmp(argv[i], "--verbose")) {
+			_verbose = true;
+		} else if (!strcmp(argv[i], "--silent")) {
+			_silent = true;
 		}
 	}
 	cout << hline;
