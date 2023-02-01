@@ -315,6 +315,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 	DEBUG(cout << hline << "Algorithm1" << endl << hline);
 	DEBUG(cout << "Input multi-map:" << endl << CMM);
 	CMM.doPageReconciliation();
+
 	DEBUG(cout << "Initial reconciliation complete:" << endl << CMM);
 //	DEBUG(for (auto mpr : CMM.getMaps()) {
 //		CophyMap* M = mpr.second;
@@ -342,10 +343,15 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 	double fudgeFactor(100.0);
 	std::set<Contender> neighbours;
 	EventCount ecoriginal = CMM.countEvents();
+	cout << "Initial" << endl;
+	cout << ecoriginal.codivs << ',' << ecoriginal.dups << ',' << ecoriginal.losses << endl;
+
 	string mapDescription;
 	CMM.toCompactString(mapDescription);
-	cout << "ORIGINAL MAP:" << endl << CMM << "Events\tScore\tMap\n" << ecoriginal
+	if (_verbose) {
+		cout << "ORIGINAL MAP:" << endl << CMM << "Events\tScore\tMap\n" << ecoriginal
 			<< '\t' << CSD(ecoriginal) << '\t' << mapDescription << endl;
+	}
 	string bestMMap;
 	EventCount bestEventCount;
 	double bestCost(1e100);	// 10^100 should be enough!!
@@ -353,15 +359,15 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 	int sampleNumber(0);
 	if (_saveTrace) {
 		ftrace.open("segdup-trace.csv", std::ofstream::out);
-		ftrace << "t,T,dups,losses,csd\n";
+		ftrace << "i,T,dups,losses,csd\n";
 	}
 	ostringstream bestPrettyMap;
 
+	EventCount ec, oldEC;
+	int noChangeInHeights(0), heightsChanged(0);
 	for (int t(0); t < nSteps; ++t) {
 		DEBUG(cout << hline << "t = " << t << endl << hline << endl);
 		int nullMoves(0);
-		EventCount ec;
-
 		T = Tinitial*(1.0 - (1.0 * t / nSteps)); // function 0 / linear
 //		T = Tinitial*(1.0 - (1.0 * t / nSteps))*(1.0 - (1.0 * t / nSteps)); // function 1 / linear2
 //		double x = 1.0 * t / nSteps;
@@ -374,6 +380,8 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //		T = Tinitial*(1.0 / (1.0 + log(1 + pow(t/SATempSpread, SATempDecay)))); // function 5 / logpow
 		double total(0.0);
 		neighbours.clear();
+		oldEC = CMM.countEvents();
+		ec = oldEC;
 		for (auto mpr : CMM.getMaps()) {
 			CophyMap* M = mpr.second;
 //			DEBUG(cout << hline << "ORIGINAL MAP:" << (*M));
@@ -393,7 +401,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //						DEBUG(cout << "Combined event counts: " << ecoriginal << "; cost = " << CSD(ecoriginal) << endl);
 //						DEBUG(cout << "Probability of sampling proportional to: " << exp(-CSD(ecoriginal) / T) << endl);
 
-//						ec = CMM.countEvents();	// XXX should just use the old one
+//						ec = oldEC;//CMM.countEvents();	// XXX should just use the old one but if I do, it all breaks!
 						double score = exp(-CSD(ec) / ( fudgeFactor * T));
 						Contender noChange( score, p, a.first, a.second, M );
 
@@ -408,13 +416,39 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //					DEBUG(cout << "Testing moving " << p->getLabel() << " to host " << eventSymbol[a.second] << a.first->getLabel() << endl);
 					Node* oldHost = M->getHost(p);
 					eventType oldEvent = M->getEvent(p);
-//					int oldSourceDuplicationHeight = CMM.calcDuplicationHeight(oldHost);
-//					int oldTargetDuplicationHeight = CMM.calcDuplicationHeight(a.first);
+					int oldSourceDuplicationHeight = CMM.calcDuplicationHeight(oldHost);
+					int oldTargetDuplicationHeight = CMM.calcDuplicationHeight(a.first);
 					M->moveToHost(p, a.first, a.second);
-//					CMM.invMap[p].erase(oldHost);
-//					CMM.invMap[p].insert(a.first);
+					CMM.invMap[oldHost].erase(p);
+					CMM.invMap[a.first].insert(p);
 					// do something here about checking the heights...
-					ec = CMM.countEvents();
+					if ((oldSourceDuplicationHeight != CMM.calcDuplicationHeight(oldHost)) ||
+							(oldTargetDuplicationHeight != CMM.calcDuplicationHeight(a.first))) {
+//						cout << CMM;
+//						cout << "p moving " << p->getLabel() << endl;
+//						cout << "old host: " << oldHost->getLabel() << endl;
+//						cout << "new host: " << a.first->getLabel() << endl;
+//						cout << "old event: " << M->describeEvent(oldEvent) << endl;
+//						cout << "new event: " << M->describeEvent(a.second) << endl;
+//						cout << "oldSourceDuplicationHeight = " << oldSourceDuplicationHeight << endl;
+//						cout << "oldTargetDuplicationHeight = " << oldTargetDuplicationHeight << endl;
+//						cout << "new height for previous host = " << CMM.calcDuplicationHeight(oldHost) << endl;
+//						cout << "new height for new host = " << CMM.calcDuplicationHeight(a.first) << endl;
+						++heightsChanged;
+//						return;
+						ec = CMM.countEvents();
+					} else {
+						++noChangeInHeights;
+						ec = oldEC;
+						ec = CMM.countEvents();
+//						cout << "old EC: " << oldEC << ";\t";
+//						cout << "counted EC: " << ec << endl;
+						CMM.toCompactString(mapDescription);
+						CMM.storeEventCount(mapDescription, ec);
+					}
+					// XXX I just CANNOT work out why this isn't working. I'm going to have to leave it until I've had more sleep, and just run simulations the slow way.
+					// XXX Fix after grant application goes in, perhaps.
+//					ec = CMM.countEvents();
 					/**
 					 * SPEEDUP ideas:
 					 * keep track of all tree duplication heights at this branch;
@@ -434,11 +468,14 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //					DEBUG(cout << "Complete Multi-Map:" << CMM << "Total multi-map event counts: " << ec << endl);
 //					DEBUG(cout << "Probability of sampling proportional to: " << con.getScore() << endl);
 					M->moveToHost(p, oldHost, oldEvent);
+					CMM.invMap[oldHost].insert(p);
+					CMM.invMap[a.first].erase(p);
+
 				}
 				total = 0.0;
 				for (auto nei : neighbours) {
 					total += nei.getScore();
-					DEBUG(cout << "total = " << total << endl);
+//					DEBUG(cout << "total = " << total << endl);
 				}
 //				DEBUG(cout << "total score = " << total << endl);
 //				DEBUG(cout << "Summary of sampling options, events & costs:" << endl);
@@ -504,6 +541,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 			r -= nei.getScore();
 			DEBUG(cout << " to " << r << endl);
 		}
+		oldEC = ec;
 	}
 	bool _showDistribution(false);
 	if (_showDistribution) {
@@ -529,14 +567,18 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //	cout << CMM << ecFinal << endl << hline << endl;
 //	cout << "final CSD: " << CSD(ecFinal) << endl;
 //	if (_verbose) {
-		cout << hline << "BEST Multiple CophyMap found by Algorithm 1:" << endl;
-		cout << bestEventCount << '\t' << bestCost << '\t' << bestMMap << '\t' << endl;
+//		cout << hline << "BEST Multiple CophyMap found by Algorithm 1:" << endl;
+		cout << "nCospec,nSegDup,nLoss" << endl;
+		cout << bestEventCount.codivs << ',' << bestEventCount.dups << ',' << bestEventCount.losses << endl;
+//		cout << bestEventCount << '\t' << bestCost << '\t' << bestMMap << '\t' << endl;
 //		cout << bestPrettyMap.str();
-		cout << hline << endl;
+//		cout << hline << endl;
 //	}
 	if (_saveTrace) {
 		ftrace.close();
 	}
+//	cout << "Number of times heights don't change: " << noChangeInHeights << endl;
+//	cout << "Number of times heights DO change: " << heightsChanged << endl;
 }
 
 void doTestCase1() {
@@ -896,6 +938,9 @@ int main(int argn, char** argv) {
 		cout << segdupHelp << endl;
 		return 0;
 	}
+	unsigned ranseed = std::chrono::system_clock::now().time_since_epoch().count();
+	generator.seed(ranseed);
+
 	CophyMultiMap CMM;
 	vector<CophyMap*> M;
 	uint numGeneTrees(0);
@@ -993,7 +1038,6 @@ int main(int argn, char** argv) {
 			_silent = true;
 		}
 	}
-	cout << hline;
 	CMM.doPageReconciliation();
 	map<string, int> sampledDistribution;
 	Algorithm1(CMM, sampledDistribution);

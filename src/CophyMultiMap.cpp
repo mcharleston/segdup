@@ -76,7 +76,7 @@ EventCount CophyMultiMap::countEvents() {
 	EventCount E;
 	Tree *H;
 	Node *p, *h;
-	bool _cacheEventCounts(true);
+	bool _cacheEventCounts(true);	// XXX Leave this on: else things just break.
 	string description;
 	if	(_cacheEventCounts) {
 		toCompactString(description);

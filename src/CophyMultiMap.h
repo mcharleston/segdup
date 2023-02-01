@@ -20,10 +20,10 @@ class CophyMultiMap {
 private:
 	std::map<Tree*, CophyMap*> maps; // Parasite tree -> Map
 	std::map<std::string, EventCount> mmEventCounts;
-	inversenodemap invMap;
 	double duplicationCost;
 	double lossCost;
 public:
+	inversenodemap invMap;
 	CophyMultiMap(double dup = defDuplicationCost, double loss = defLossCost) : duplicationCost(dup), lossCost(loss) {}
 	virtual ~CophyMultiMap() {}
 

@@ -38,7 +38,7 @@ CophyMap::CophyMap(const CophyMap &other) {
 std::set<pair<Node*, eventType>> CophyMap::calcAvailableNewHosts(Node* p) {
 	// can go up to same vertex to which parent is mapped, and down to the LCA of there the children are mapped.
 	//
-	bool _debugging(true);
+	bool _debugging(false);
 	DEBUG(cout << "Calculating available hosts for node " << p->getLabel() << ":" << endl);
 	std::set<pair<Node*, eventType>> avail;
 	Node* bottom;
