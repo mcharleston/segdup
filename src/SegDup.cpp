@@ -570,6 +570,10 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 		cout << CMM << ecFinal << endl << hline << endl;
 		cout << "final CSD: " << CSD(ecFinal) << endl;
 	}
+	ofstream fmap;
+	fmap.open("best-map-found.txt", std::ofstream::out);
+	fmap << bestPrettyMap.str();
+	fmap.close();
 //	cout << "FINAL Multiple CophyMap found by Algorithm 1:" << endl;
 //	EventCount ecFinal(CMM.countEvents());
 //	cout << CMM << ecFinal << endl << hline << endl;
