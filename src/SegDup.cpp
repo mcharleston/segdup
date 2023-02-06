@@ -343,8 +343,11 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 	double fudgeFactor(100.0);
 	std::set<Contender> neighbours;
 	EventCount ecoriginal = CMM.countEvents();
-	cout << "Initial" << endl;
-	cout << ecoriginal.codivs << ',' << ecoriginal.dups << ',' << ecoriginal.losses << endl;
+	cout << "initCodiv,initDups,initLosses,initCost" << endl;
+	cout << ecoriginal.codivs << ','
+			<< ecoriginal.dups << ','
+			<< ecoriginal.losses << ','
+			<< CSD(ecoriginal) << endl;
 
 	string mapDescription;
 	CMM.toCompactString(mapDescription);
@@ -535,6 +538,11 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					ftrace << to_string(CSD(ec)) << endl;
 					DEBUG(cout << "\tSaving new sampled solution" << endl);
 				}
+				if (_verbose && ((t+1) % 100 == 0)) {
+					cout << (t+1) << ',' << ec.dups << ',';
+					cout << ec.losses << ',';
+					cout << to_string(CSD(ec)) << endl;
+				}
 				break;
 			}
 			DEBUG(cout << "r reducing from " << r);
@@ -568,10 +576,13 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //	cout << "final CSD: " << CSD(ecFinal) << endl;
 //	if (_verbose) {
 //		cout << hline << "BEST Multiple CophyMap found by Algorithm 1:" << endl;
-		cout << "nCospec,nSegDup,nLoss" << endl;
-		cout << bestEventCount.codivs << ',' << bestEventCount.dups << ',' << bestEventCount.losses << endl;
+	if (_verbose) {
+		cout << bestPrettyMap.str();
+	}
+		cout << "nCospec,nSegDup,nLoss,cost" << endl;
+		cout << bestEventCount.codivs << ',' << bestEventCount.dups
+				<< ',' << bestEventCount.losses << ',' << bestCost << endl;
 //		cout << bestEventCount << '\t' << bestCost << '\t' << bestMMap << '\t' << endl;
-//		cout << bestPrettyMap.str();
 //		cout << hline << endl;
 //	}
 	if (_saveTrace) {
