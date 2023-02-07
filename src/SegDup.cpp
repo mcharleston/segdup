@@ -356,8 +356,8 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 			<< '\t' << CSD(ecoriginal) << '\t' << mapDescription << endl;
 	}
 	string bestMMap;
-	EventCount bestEventCount;
-	double bestCost(1e100);	// 10^100 should be enough!!
+	EventCount bestEventCount(ecoriginal);
+	double bestCost(CSD(ecoriginal));	// 10^100 should be enough!!
 	ofstream ftrace;
 	int sampleNumber(0);
 	if (_saveTrace) {
@@ -365,6 +365,8 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 		ftrace << "i,T,dups,losses,csd\n";
 	}
 	ostringstream bestPrettyMap;
+
+	bool _showDistribution(false);
 
 	EventCount ec, oldEC;
 	int noChangeInHeights(0), heightsChanged(0);
@@ -498,11 +500,13 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 			}
 //				DEBUG(cout << endl);
 		}
+
 		double r = dran(total);
 		DEBUG(cout << "Total probability proportional to " << total << endl);
 		if (neighbours.size() == 0) {
 			throw new app_exception("No neighbours at all!!");
 		}
+		// XXX memory leak happening in this bit:
 		for (auto nei : neighbours) {
 			DEBUG(cout << "This neighbour has score " << nei.getScore() << endl);
 			if (r <= nei.getScore()) {
@@ -517,7 +521,9 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //							DEBUG(cout << t << '\t' << nei.getLabel() << endl);
 				}
 				CMM.toCompactString(mapDescription);
-				sampledDistribution[mapDescription] += 1;
+				if (_showDistribution) {
+					sampledDistribution[mapDescription] += 1;
+				}
 				ec = CMM.getEventCount(mapDescription);
 				double cost = CSD(ec);
 				if (cost < bestCost) {
@@ -551,7 +557,6 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 		}
 		oldEC = ec;
 	}
-	bool _showDistribution(false);
 	if (_showDistribution) {
 		cout << hline << "Sampled Distribution of Solutions:" << endl
 				<< "Event Counts; Score";
