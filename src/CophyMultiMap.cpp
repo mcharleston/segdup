@@ -19,6 +19,9 @@ int CophyMultiMap::calcDuplicationHeight(Node *h) {
 	 * Find each node in each parasite/gene tree mapped to node h.
 	 * For each, calculate the height of each gene subtree that is mapped to h
 	 * The duplication height is the maximum of these.
+	 *
+	 * XXX should not be re-counting for any node that hasn't moved
+	 *
 	 */
 	bool _debugging(false);
 	DEBUG(cout << "Calculating duplication height for host node " << h->getLabel() << endl);
@@ -34,7 +37,7 @@ int CophyMultiMap::calcDuplicationHeight(Node *h) {
 		int height = (M->getEvent(p) == duplication) ? 1 : 0;	// this is probably dodgy because it treats "noevent" and "loss" as "codivergence"
 		DEBUG(cout << "\tinitial height for this lineage is " << height << endl);
 		while (p->getParent() != nullptr) {
-			p = p->getParent();
+			p = p->getParent();	// XXX This is a good thing to optimise for speed
 			if (invMap[h].count(p) > 0) {
 				++height;
 			} else {
