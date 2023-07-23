@@ -29,6 +29,7 @@ Tree::Tree(char pre, std::string str) : root(nullptr), labelSpace(0), numVertice
 		calcAncestry();
 		_showInfo = false;
 	} else {
+		cerr << "Culprit:\n" << str << endl;
 		throw new app_exception("Tree constructor[1] with a single string argument is expecting Newick format tree description.");
 	}
 }

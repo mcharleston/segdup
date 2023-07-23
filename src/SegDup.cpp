@@ -437,7 +437,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					DEBUG(cout << "Selected move: " << nei.getLabel() << " (probability = " << (nei.getScore()/total) << ")" << endl);
 					nei.getMap()->moveToHost(nei.getParasite(), nei.getHost(), nei.getEvent());
 					nei.getMap()->checkValidHostOrdering();
-					DEBUG(cout << (*M));
+//					DEBUG(cout << (*M));
 //							DEBUG(cout << nei.getLabel() << endl << *(nei.getMap()->getParasiteTree()));
 //							DEBUG(cout << t << '\t' << nei.getLabel() << endl);
 				}
@@ -847,6 +847,7 @@ int main(int argn, char** argv) {
 	Tree *S(nullptr);
 	vector<Tree*> G;
 	for (int i(1); i < argn; ++i) {
+		DEBUG(cout << "Parsing argument " << i << " = " << argv[i] << endl);
 		if (!strcmp(argv[i], "?") || !strcmp(argv[i], "-h")) {
 			cout << segdupHelp;
 			return 0;
@@ -858,9 +859,16 @@ int main(int argn, char** argv) {
 			S->setLabel("S");
 			cout << "Input Species tree:" << endl << (*S) << endl;
 		} else if (!strcmp(argv[i], "-G")) {
-			++numGeneTrees;
 			++i;
 			string newick(argv[i]);
+			if (newick[0] != '(') {
+				cerr << "WARNING: Expecting a non-trivial Newick-format tree here, but got this:\n\t"
+						<< newick
+						<< "\nSegDup is skipping this argument and the next, which should be a set of associations.\n";
+				++i;	// skip this AND the next argument
+				continue;	// ... and go on to the next argument.  This isn't a non-trivial tree.
+			}
+			++numGeneTrees;
 			G.push_back(new Tree('g', newick));
 			Tree *P = G[numGeneTrees-1];
 			P->setLabel("G" + to_string(numGeneTrees));
