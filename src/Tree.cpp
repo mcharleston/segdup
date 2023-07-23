@@ -29,7 +29,7 @@ Tree::Tree(char pre, std::string str) : root(nullptr), labelSpace(0), numVertice
 		calcAncestry();
 		_showInfo = false;
 	} else {
-		throw new app_exception("Tree constructor with a single string argument is expecting Newick format tree description.");
+		throw new app_exception("Tree constructor[1] with a single string argument is expecting Newick format tree description.");
 	}
 }
 Tree::Tree(std::string str) : root(nullptr), labelSpace(0), numVertices(-1) {
@@ -40,7 +40,7 @@ Tree::Tree(std::string str) : root(nullptr), labelSpace(0), numVertices(-1) {
 		calcAncestry();
 		_showInfo = false;
 	} else {
-		throw new app_exception("Tree constructor with a single string argument is expecting Newick format tree description.");
+		throw new app_exception("Tree constructor[2] with a single string argument is expecting Newick format tree description.");
 	}
 }
 
@@ -307,7 +307,7 @@ Tree& Tree::operator=(const string& str) {
 		_showInfo = false;
 		return *this;
 	} else {
-		throw new app_exception("Tree constructor with a single string argument is expecting Newick format tree description.");
+		throw new app_exception("Tree copy constructor with a single string argument is expecting Newick format tree description.");
 	}
 }
 ostream& operator<<(ostream& os, Tree& T) {
