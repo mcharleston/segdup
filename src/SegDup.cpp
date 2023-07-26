@@ -312,25 +312,13 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 	DEBUG(cout << "Input multi-map:" << endl << CMM);
 	CMM.doPageReconciliation();
 	DEBUG(cout << "Initial reconciliation complete:" << endl << CMM);
-//	DEBUG(for (auto mpr : CMM.getMaps()) {
-//		CophyMap* M = mpr.second;
-//		cout << M->getParasiteTree()->getLabel() << " event counts: " << M->countEvents() << endl;
-//	});
 
-//	DEBUG(cout << "total event counts: " << CMM.countEvents() << endl);
 	CophyMultiMap nuMM(CMM);
 	map<CophyMap*, set<Node*>> iV;	// internal vertices of each parasite / gene tree
 	for (auto mpr : CMM.getMaps()) {
-		CophyMap* M = mpr.second;string segdupHelp("SegDup Help:\n"
-				"\t>./segdup -[hvDn]");
+		CophyMap* M = mpr.second;
 		Tree* G = M->getParasiteTree();
 		G->putInternalVertices(iV[M]);
-//		DEBUG(cout << "Tree " << G->getLabel() << " has internal vertices { ";
-//			for (Node* n : iV[M]) {
-//				cout << n->getLabel() << " ";
-//			}
-//			cout << "}" << endl;
-//		);
 	}
 
 	double T(0.0);
@@ -338,8 +326,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 	EventCount ecoriginal = CMM.countEvents();
 	string mapDescription;
 	CMM.toCompactString(mapDescription);
-	cout << "ORIGINAL MAP:" << endl << CMM << "Events\tScore\tMap\n" << ecoriginal
-			<< '\t' << CSD(ecoriginal) << '\t' << mapDescription << endl;
+//	cout << "ORIGINAL MAP:" << endl << CMM << "Events\tScore\tMap\n" << ecoriginal << '\t' << CSD(ecoriginal) << '\t' << mapDescription << endl;
 	string bestMMap;
 	EventCount bestEventCount;
 	double bestCost(1e100);	// 10^100 should be enough!!
@@ -349,86 +336,67 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 		ftrace.open("segdup-trace.csv", std::ofstream::out);
 	}
 	ostringstream bestPrettyMap;
+	unsigned int numNeighbours(0);
 
 	for (int t(0); t < nSteps; ++t) {
 		int nullMoves(0);
 		EventCount ec;
 		T = Tinitial*(1.0 - (1.0 * t / nSteps));
-		double total(0.0);
 		neighbours.clear();
+		numNeighbours = 0;
 		for (auto mpr : CMM.getMaps()) {
 			CophyMap* M = mpr.second;
-//			DEBUG(cout << hline << "ORIGINAL MAP:" << (*M));
 			for (Node* p : iV[M]) {
 				set<pair<Node*, eventType>> nextImages = M->calcAvailableNewHosts(p);
-				DEBUG(
-					cout << "Node " << p->getLabel() << " has possible images { ";
-					for (auto a : nextImages) {
-							cout << eventSymbol[a.second] << a.first->getLabel() << " ";
-						}
-					cout << "}" << endl
-				);
+					// XXX M-calcAvailableNewHosts(p) has been checked for mem leaks and looks ok
+//				DEBUG(
+//					cout << "Node " << p->getLabel() << " has possible images { ";
+//					for (auto a : nextImages) {
+//							cout << eventSymbol[a.second] << a.first->getLabel() << " ";
+//						}
+//					cout << "}; ";
+//				);
 				for (auto a : nextImages) {
-//					DEBUG(cout << "***" << endl);
 					if (a.first == M->getHost(p) && a.second == M->getEvent(p)) {
-//						DEBUG(cout << "No change: " << p->getLabel() << " staying on " << a.first->getLabel() << endl);
-//						DEBUG(cout << "Combined event counts: " << ecoriginal << "; cost = " << CSD(ecoriginal) << endl);
-//						DEBUG(cout << "Probability of sampling proportional to: " << exp(-CSD(ecoriginal) / T) << endl);
-
 
 						ec = CMM.countEvents();
+						// XXX CMM.countEvents() has been checked for mem leaks and looks ok
 						double score = exp(-CSD(ec) / (1.0*T));
 						Contender noChange( score, p, a.first, a.second, M );
+						// XXX noChange constructor above has been checked for mem leaks and looks ok
 
 						noChange._noMove = true;
 						noChange.setLabel("leaving " + p->getLabel() + " on [" + eventSymbol[a.second] + "]" + a.first->getLabel());
 
 						neighbours.insert(noChange);
-//						DEBUG(cout << "Adding a noChange move: " << noChange << endl);
 						++nullMoves;
 						continue;
 					}
-//					DEBUG(cout << "Testing moving " << p->getLabel() << " to host " << eventSymbol[a.second] << a.first->getLabel() << endl);
 					Node* oldHost = M->getHost(p);
 					eventType oldEvent = M->getEvent(p);
 					M->moveToHost(p, a.first, a.second);
 					ec = CMM.countEvents();
-//					DEBUG(cout << "New event counts: " << ec << endl);
 					Association ass(p, a.first, a.second);
 					double score = exp(-CSD(ec) / (1.0*T));
 					Contender con( score, p, a.first, a.second, M );
+					DEBUG(cout << score << ' ');
 					string label = "moving " + p->getLabel() + " to [" + eventSymbol[a.second] + "]" + a.first->getLabel();
 					con.setLabel(label);
 					neighbours.insert(con);
-//					DEBUG(cout << "Complete Multi-Map:" << CMM << "Total multi-map event counts: " << ec << endl);
-//					DEBUG(cout << "Probability of sampling proportional to: " << con.getScore() << endl);
 					M->moveToHost(p, oldHost, oldEvent);
 				}
-				for (auto nei : neighbours) {
-					total += nei.getScore();
-				}
-//				DEBUG(cout << "total score = " << total << endl);
-//				DEBUG(cout << "Summary of sampling options, events & costs:" << endl);
-//				for (auto nei : neighbours) {
-//					DEBUG(cout << "\t" << nei.getLabel() //<< " " <<  nei.getParasite()->getLabel() << ':' << nei.getHost()->getLabel()
-//							<< " has cost " << nei.getScore() << endl);
-//				}
-//				DEBUG(cout << '\t' << nullMoves << " null moves with cost " << CSD(ecoriginal) << endl);
-//				 DO THE SAMPLING HERE
-//				DEBUG(
-//						cout << "Scores of neighbours: ";
-//						for (auto nei : neighbours) {
-//							cout << nei.getScore() << " ";
-//						}
-//						cout << endl
-//						);
 			}
-//				DEBUG(cout << endl);
 		}
-		double r = dran(total);
-		DEBUG(cout << "Total probability proportional to " << total << endl);
+		double total(0.0);
 		for (auto nei : neighbours) {
-//					DEBUG(cout << "This neighbour has score " << nei.getScore() << endl);
+			total += nei.getScore();
+		}
+		numNeighbours += neighbours.size();
+		double r = dran(total);
+		DEBUG(cout << "\nTotal score " << total << " from " << numNeighbours << " neighbours; r = " << r << endl);
+		// XXX MEMORY LEAK IN THIS CHUNK: (!?)
+//		cerr << neighbours.size() << endl; XXX No, not the number of neighbours...
+		for (auto nei : neighbours) {
 			if (r <= nei.getScore()) {
 				if (nei._noMove) {
 					DEBUG(cout << "Selected move: No change (probability = " << (nei.getScore()/total) << ")" << endl);
@@ -437,9 +405,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					DEBUG(cout << "Selected move: " << nei.getLabel() << " (probability = " << (nei.getScore()/total) << ")" << endl);
 					nei.getMap()->moveToHost(nei.getParasite(), nei.getHost(), nei.getEvent());
 					nei.getMap()->checkValidHostOrdering();
-//					DEBUG(cout << (*M));
-//							DEBUG(cout << nei.getLabel() << endl << *(nei.getMap()->getParasiteTree()));
-//							DEBUG(cout << t << '\t' << nei.getLabel() << endl);
+ //					XXX nei.getMap()->checkValidHostOrdering(); above has been checked for mem leak and appears to be ok.
 				}
 				CMM.toCompactString(mapDescription);
 				sampledDistribution[mapDescription] += 1;
@@ -459,10 +425,11 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 				DEBUG(cout << nei.getLabel() << '\t' << nei.getScore() << endl);
 				break;
 			}
-//					DEBUG(cout << "r reducing from " << r);
+			DEBUG(cout << r << ' ');
 			r -= nei.getScore();
-//					DEBUG(cout << " to " << r << endl);
 		}
+		DEBUG(cout << endl);
+		// XXX
 	}
 	if (_showSampledDistribution) {
 		cout << hline << "Sampled Distribution of Solutions:" << endl

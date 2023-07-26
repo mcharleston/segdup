@@ -38,7 +38,7 @@ CophyMap::CophyMap(const CophyMap &other) {
 std::set<pair<Node*, eventType>> CophyMap::calcAvailableNewHosts(Node* p) {
 	// can go up to same vertex to which parent is mapped, and down to the LCA of there the children are mapped.
 	//
-	bool _debugging(true);
+	bool _debugging(false);
 	DEBUG(cout << "Calculating available hosts for node " << p->getLabel() << ":" << endl);
 	std::set<pair<Node*, eventType>> avail;
 	Node* bottom;
@@ -289,18 +289,32 @@ Node* CophyMap::mapToLCAofChildren(Node* p) {
 
 void CophyMap::moveToHost(Node* p, Node *h) {
 	try {
-		// have to change the host of p stored in p, the nodemap AND the inversenodemap
+		// have to change the host of p stored in phi, the nodemap AND the inversenodemap
 		// first remove p from the inverseNodeMap of h:
 		Node* currentHost = phi[p];
-		phi[p] = h;
+//		for (unsigned int bug(0); bug < 10000; ++bug) {
+//			phi[p] = h;
+//			invPhi[currentHost].erase(p);
+//			invPhi[h].insert(p);
+//			phi[p] = currentHost;
+//			invPhi[h].erase(p);
+//			invPhi[currentHost].insert(p);
+//		}
+		phi[p] = h; // XXX is phi, being a map of Node* to Node*, just getting bigger and bigger?
 		invPhi[currentHost].erase(p);
 		invPhi[h].insert(p);
+//		cerr << invPhi.size() << ", " << phi.getData().size() << endl;	// apparently not.
+//		for (auto a : invPhi) {
+//			cerr << a.second.size() << ',';
+//		}
+//		cerr << endl;
 //		P->getInfo().at(p) = h->getLabel();
 	} catch (const exception& e) {
 		cout << e.what();
 	}
 }
 void CophyMap::moveToHost(Node* p, Node *h, eventType e) {
+	// XXX MEMORY LEAK IN HERE?
 //	DEBUG(cout << "Moving " << p->getLabel() << " from " << eventSymbol[event[p]] << phi[p]->getLabel()
 //			<< " to " << eventSymbol[e] << h->getLabel() << endl);
 	moveToHost(p, h);
