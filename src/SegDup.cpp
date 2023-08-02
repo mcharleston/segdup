@@ -22,6 +22,7 @@
 #include "Contender.h"
 
 #include "../utility/debugging.h"
+#include "../utility/niceties.h"
 
 /**
  * Input to an instance includes whether each node is mapped to a D or S
@@ -31,6 +32,7 @@ using namespace std;
 using namespace segdup;
 
 bool _debugging(true);
+bool _cacheEventCounts(false);
 bool _silent(false);
 bool _outputProbabilities(false);
 bool _saveTrace(false);
@@ -297,11 +299,11 @@ void testDuplicationHeight() {
 	CMM.addCophyMap(&M);
 	CMM.addCophyMap(&M2);
 	CMM.addCophyMap(&M3);
-	int h = CMM.calcDuplicationHeight(S["v4"]);
+	int h = CMM.calcCombinedDuplicationHeight(S["v4"]);
 	cout << "dh(v4) = " << h << endl;
-	h = CMM.calcDuplicationHeight(S["v3"]);
+	h = CMM.calcCombinedDuplicationHeight(S["v3"]);
 	cout << "dh(v3) = " << h << endl;
-	h = CMM.calcDuplicationHeight(S["v5"]);
+	h = CMM.calcCombinedDuplicationHeight(S["v5"]);
 	cout << "dh(v5) = " << h << endl;
 	cout << "Counting events with segmental duplications" << endl << CMM.countEvents() << endl;
 }
@@ -323,7 +325,6 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 
 	double T(0.0);
 	std::set<Contender> neighbours;
-	EventCount ecoriginal = CMM.countEvents();
 	string mapDescription;
 	CMM.toCompactString(mapDescription);
 //	cout << "ORIGINAL MAP:" << endl << CMM << "Events\tScore\tMap\n" << ecoriginal << '\t' << CSD(ecoriginal) << '\t' << mapDescription << endl;
@@ -337,8 +338,19 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 	}
 	ostringstream bestPrettyMap;
 	unsigned int numNeighbours(0);
+	EventCount currentEventCount = CMM.countEvents();
 
-	for (int t(0); t < nSteps; ++t) {
+	for (int t(1); t <= nSteps; ++t) {
+		if (t % 10 == 0) {
+			advance_cursor();
+		}
+		if (t % 100 == 0) {
+			update_message(" steps = " + to_string(t) + "; score = "
+					+ to_string(currentEventCount.codivs) + "C + "
+					+ to_string(currentEventCount.dups) + "D + "
+					+ to_string(currentEventCount.losses) + "L"
+					+ "; best cost = " + to_string(bestCost));
+		}
 		int nullMoves(0);
 		EventCount ec;
 		T = Tinitial*(1.0 - (1.0 * t / nSteps));
@@ -348,7 +360,6 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 			CophyMap* M = mpr.second;
 			for (Node* p : iV[M]) {
 				set<pair<Node*, eventType>> nextImages = M->calcAvailableNewHosts(p);
-					// XXX M-calcAvailableNewHosts(p) has been checked for mem leaks and looks ok
 //				DEBUG(
 //					cout << "Node " << p->getLabel() << " has possible images { ";
 //					for (auto a : nextImages) {
@@ -357,13 +368,11 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //					cout << "}; ";
 //				);
 				for (auto a : nextImages) {
+					ec.clear();
 					if (a.first == M->getHost(p) && a.second == M->getEvent(p)) {
 
-						ec = CMM.countEvents();
-						// XXX CMM.countEvents() has been checked for mem leaks and looks ok
-						double score = exp(-CSD(ec) / (1.0*T));
-						Contender noChange( score, p, a.first, a.second, M );
-						// XXX noChange constructor above has been checked for mem leaks and looks ok
+						double score = exp(-CSD(currentEventCount) / (1.0*T));
+						Contender noChange( currentEventCount, score, p, a.first, a.second, M );
 
 						noChange._noMove = true;
 						noChange.setLabel("leaving " + p->getLabel() + " on [" + eventSymbol[a.second] + "]" + a.first->getLabel());
@@ -374,15 +383,45 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					}
 					Node* oldHost = M->getHost(p);
 					eventType oldEvent = M->getEvent(p);
-					M->moveToHost(p, a.first, a.second);
-					ec = CMM.countEvents();
+					// Get cost of move, without recalculating everything:
+					// Any change in the number of codivergences?
+					DEBUG(cout << "p=" << p->getLabel() << "; oldHost=" << oldHost->getLabel()
+							<< "; newHost=" << a.first->getLabel() << endl);
+					ec.codivs = (a.second == codivergence) ? 1 : 0;
+					ec.codivs -= (oldEvent == codivergence) ? 1 : 0;
+
+					// Any change in number of losses?
+					if (oldHost->isAncestralTo(a.first)) {
+						DEBUG(cout << "old host is ancestral to new host" << endl);
+						ec.losses = -(a.first->getTree()->getDistUp(a.first, oldHost));
+					} else if (a.first->isAncestralTo(oldHost)) {
+						DEBUG(cout << "new host is ancestral to old host" << endl);
+						ec.losses = oldHost->getTree()->getDistUp(oldHost, a.first);
+					} else {
+						DEBUG(cout << "old and new hosts are not ancestrally comparable" << endl);
+					}
+					// Any change in number of duplications?
+					int oldHostDuplicationHeight(M->calcDuplicationHeight(p));
+					int destinationDuplicationHeight(CMM.calcCombinedDuplicationHeight(a.first));
+					M->moveToHost(p, a.first, a.second);	// TODO think of a nice way that I don't have to move p twice..
+					int dupHeightOfPOnNewHost = M->getDuplicationHeight(p);
+					if (dupHeightOfPOnNewHost > destinationDuplicationHeight) {
+						ec.dups = 1;	// one more duplication required (can only go up by one)
+					}
+					int remainingHostDupHeightOnOldHost(CMM.calcCombinedDuplicationHeight(oldHost));
+					if (oldHostDuplicationHeight > remainingHostDupHeightOnOldHost) {
+						ec.dups -= 1;	// dup height on original host/species was due to this parasite/gene
+					}
+
+					// Store this contender and its eventcount:
+					ec += currentEventCount;
 					Association ass(p, a.first, a.second);
 					double score = exp(-CSD(ec) / (1.0*T));
-					Contender con( score, p, a.first, a.second, M );
-					DEBUG(cout << score << ' ');
+					Contender con( ec, score, p, a.first, a.second, M );
 					string label = "moving " + p->getLabel() + " to [" + eventSymbol[a.second] + "]" + a.first->getLabel();
 					con.setLabel(label);
 					neighbours.insert(con);
+					// return p to its old place
 					M->moveToHost(p, oldHost, oldEvent);
 				}
 			}
@@ -393,7 +432,6 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 		}
 		numNeighbours += neighbours.size();
 		double r = dran(total);
-		DEBUG(cout << "\nTotal score " << total << " from " << numNeighbours << " neighbours; r = " << r << endl);
 		// XXX MEMORY LEAK IN THIS CHUNK: (!?)
 //		cerr << neighbours.size() << endl; XXX No, not the number of neighbours...
 		for (auto nei : neighbours) {
@@ -407,9 +445,14 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					nei.getMap()->checkValidHostOrdering();
  //					XXX nei.getMap()->checkValidHostOrdering(); above has been checked for mem leak and appears to be ok.
 				}
-				CMM.toCompactString(mapDescription);
-				sampledDistribution[mapDescription] += 1;
-				ec = CMM.getEventCount(mapDescription);
+				if (_cacheEventCounts) {
+					CMM.toCompactString(mapDescription);
+					sampledDistribution[mapDescription] += 1;
+					ec = CMM.getEventCount(mapDescription);
+				} else {
+					ec = nei.getEventCount();
+				}
+				currentEventCount = ec;
 				double cost = CSD(ec);
 				if (cost < bestCost) {
 					bestCost = cost;
@@ -431,6 +474,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 		DEBUG(cout << endl);
 		// XXX
 	}
+	cout << endl;
 	if (_showSampledDistribution) {
 		cout << hline << "Sampled Distribution of Solutions:" << endl
 				<< "Events\tScore\tMap\tSamples" << endl;
@@ -670,8 +714,8 @@ void doTestCase7() {
 	cout << "Gene tree " << G2.getLabel() << endl << G2;
 	EventCount E2 = M2.countEvents();
 	cout << "Event counts for " << G2.getLabel() << ":" << endl << E2 << endl;
-	cout << "Duplication height at root of tree, should be 2: " << MCM.calcDuplicationHeight(h) << endl;
-	cout << "Duplication height at (B,C), should be 0: " << MCM.calcDuplicationHeight(S.LCA("A","B")) << endl;
+	cout << "Duplication height at root of tree, should be 2: " << MCM.calcCombinedDuplicationHeight(h) << endl;
+	cout << "Duplication height at (B,C), should be 0: " << MCM.calcCombinedDuplicationHeight(S.LCA("A","B")) << endl;
 	cout << " Test case 7 event counts: " << MCM.countEvents() << endl << hline;
 }
 void ybcTestCases() {
@@ -767,8 +811,9 @@ void doContenderTest() {
 	set<Contender> C;
 	Node p("p"), h("h");
 	CophyMap M;
+	EventCount ec;
 	for (uint i(0); i < 100; ++i) {
-		Contender c(dran(1.0), &p, &h, noevent, &M);
+		Contender c(ec, dran(1.0), &p, &h, noevent, &M);
 		C.insert(c); // should make a copy
 	}
 	for (auto c : C) {

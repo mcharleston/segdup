@@ -28,7 +28,7 @@ public:
 	virtual ~CophyMultiMap() {}
 
 	void addCophyMap(CophyMap* M) { maps[M->getParasiteTree()] = M; }
-	int calcDuplicationHeight(Node *h);
+	int calcCombinedDuplicationHeight(Node *h);
 	void calcInverseMap();
 	void clear();
 

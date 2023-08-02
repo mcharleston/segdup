@@ -28,8 +28,8 @@ private:
 	int numVertices;
 	bool _showInfo;
 	char prefix;
-	std::map<Node*, std::string>* info; // TODO this needs to be turned into a pointer, referring back to maybe an original in a cophymap or null.
-//	std::map<Node*, eventType> event;
+	std::map<Node*, std::string>* info;
+	//	std::map<Node*, eventType> event;
 
 public:
 	Tree() : label("untitled"), root(nullptr), labelSpace(0), numVertices(-1), _showInfo(false), prefix('v'), info(nullptr) {}

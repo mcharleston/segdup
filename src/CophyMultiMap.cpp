@@ -11,10 +11,11 @@
 using namespace std;
 
 extern bool _debugging;
+extern bool _cacheEventCounts;
 
 namespace segdup {
 
-int CophyMultiMap::calcDuplicationHeight(Node *h) {
+int CophyMultiMap::calcCombinedDuplicationHeight(Node *h) {
 	/**
 	 * Find each node in each parasite/gene tree mapped to node h.
 	 * For each, calculate the height of each gene subtree that is mapped to h
@@ -32,23 +33,25 @@ int CophyMultiMap::calcDuplicationHeight(Node *h) {
 //	}
 	int dupHeight(0);
 	for (Node* p : invMap[h]) {
-		DEBUG(cout << p->getLabel() << " is on host " << h->getLabel() << endl);
+//		DEBUG(cout << p->getLabel() << " is on host " << h->getLabel() << endl);
 		CophyMap* M = maps[p->getTree()];
-		int height = (M->getEvent(p) == duplication) ? 1 : 0;	// this is probably dodgy because it treats "noevent" and "loss" as "codivergence"
-		DEBUG(cout << "\tinitial height for this lineage is " << height << endl);
-		while (p->getParent() != nullptr) {
-			p = p->getParent();	// XXX This is a good thing to optimise for speed
-			if (invMap[h].count(p) > 0) {
-				++height;
-			} else {
-				DEBUG(cout << "\theight for this p = " << height << endl);
-				DEBUG(cout << "\tdupHeight = " << dupHeight << endl);
-				break;
-			}
-		}
-		dupHeight = max<int>(dupHeight, height);
+//		int height = (M->getEvent(p) == duplication) ? 1 : 0;	// this is probably dodgy because it treats "noevent" and "loss" as "codivergence"
+//		DEBUG(cout << "\tinitial height for this lineage is " << height << endl);
+//		while (p->getParent() != nullptr) {
+//			p = p->getParent();	// XXX This is a good thing to optimise for speed
+//			if (invMap[h].count(p) > 0) {
+//				++height;
+//			} else {
+//				DEBUG(cout << "\theight for this p = " << height << endl);
+//				DEBUG(cout << "\tdupHeight = " << dupHeight << endl);
+//				break;
+//			}
+//		}
+		DEBUG(cout << "Considering node " << p->getLabel() << " on tree " << p->getTree()->getLabel() << endl);
+		dupHeight = max<int>(dupHeight, M->getDuplicationHeight(p));
 	}
 	DEBUG(cout << "\tduplication height is " << dupHeight << endl);
+	DEBUG(cout << *this << endl);
 	return dupHeight;
 }
 
@@ -79,11 +82,11 @@ EventCount CophyMultiMap::countEvents() {
 	EventCount E;
 	Tree *H;
 	Node *p, *h;
-	bool _cacheEventCounts(true);
 	string description;
 	if	(_cacheEventCounts) {
 		toCompactString(description);
 		if (mmEventCounts.find(description) != mmEventCounts.end()) {
+//			cerr << "size of score table = " << mmEventCounts.size() << endl;
 			return mmEventCounts[description];
 		}
 	}
@@ -133,7 +136,7 @@ EventCount CophyMultiMap::countEvents() {
 		if (countedHosts.count(iter.second) > 0) {
 			continue;
 		}
-		E.dups += calcDuplicationHeight(iter.second);
+		E.dups += calcCombinedDuplicationHeight(iter.second);
 		countedHosts.insert(iter.second);
 		// XXX assumes all segmental duplications are permitted -- everything is adjacent!
 	}

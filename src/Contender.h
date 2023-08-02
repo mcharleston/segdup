@@ -23,6 +23,7 @@ namespace segdup {
  */
 class Contender {
 private:
+	EventCount ec;
 	double score;
 	std::string label;
 	Association assoc;
@@ -30,13 +31,15 @@ private:
 public:
 	bool _noMove;
 //	Contender(double d, const Association& as) : score(d), label(""), assoc(as), M(nullptr) {}
-	Contender(double d, Node* p, Node* h, eventType e, CophyMap* m) : score(d), assoc(p, h, e), M(m), _noMove(false)  {}
+	Contender(EventCount ecount, double d, Node* p, Node* h, eventType e, CophyMap* m)
+			: ec(ecount), score(d), assoc(p, h, e), M(m), _noMove(false)  {}
 
 //	Contender(double d, std::string s) : score(d), label(s) {}
-	Contender(const Contender& c) : score(c.score), label(c.label), assoc(c.assoc), M(c.M), _noMove(c._noMove) {}
+	Contender(const Contender& c) : ec(c.ec), score(c.score), label(c.label), assoc(c.assoc), M(c.M), _noMove(c._noMove) {}
 	virtual ~Contender();
 
 	eventType getEvent() const { return assoc.e; }
+	EventCount getEventCount() const { return ec; }
 	Node* getHost() { return assoc.h; }
 	Node* getHost() const { return assoc.h; }
 	std::string getLabel() const { return label; }
