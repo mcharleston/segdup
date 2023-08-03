@@ -195,6 +195,7 @@ ostream& operator<<(ostream& os, CophyMultiMap& CMM) {
 	for (auto mpr : CMM.getMaps()) {
 		mpr.first->setShowInfo(true);
 		os << mpr.first->getLabel() << endl << *(mpr.first);
+		os << "Event count: " << mpr.second->countEvents() << endl;
 	}
 	os << "{Key: duplication marked by [" << eventSymbol[duplication] << "]; codivergence by ["
 			<< eventSymbol[codivergence] << "].}" << endl;

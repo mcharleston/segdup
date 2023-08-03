@@ -90,6 +90,7 @@ int CophyMap::calcDuplicationHeight(Node *p) {
 	/**
 	 * Calculate and return the maximum height of any subtree of this parasite/gene tree on the same host/species node as p.
 	 */
+	bool _debugging(false);
 	Node* h = phi[p];
 	p->dupHeight = 0;
 	DEBUG(cout << "This host/species node (" << h->getLabel() << ") has " << invPhi[h].size() << " occupants." << endl);
@@ -320,7 +321,7 @@ Node* CophyMap::mapToLCAofChildren(Node* p) {
 }
 
 void CophyMap::moveToHost(Node* p, Node *h) {
-	bool _debugging(true);
+	bool _debugging(false);
 	try {
 		// have to change the host of p stored in phi, the nodemap AND the inversenodemap
 		// first remove p from the inverseNodeMap of h:

@@ -350,6 +350,8 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					+ to_string(currentEventCount.dups) + "D + "
 					+ to_string(currentEventCount.losses) + "L"
 					+ "; best cost = " + to_string(bestCost));
+			DEBUG(cout << CMM);
+			break;
 		}
 		int nullMoves(0);
 		EventCount ec;
@@ -360,13 +362,13 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 			CophyMap* M = mpr.second;
 			for (Node* p : iV[M]) {
 				set<pair<Node*, eventType>> nextImages = M->calcAvailableNewHosts(p);
-//				DEBUG(
-//					cout << "Node " << p->getLabel() << " has possible images { ";
-//					for (auto a : nextImages) {
-//							cout << eventSymbol[a.second] << a.first->getLabel() << " ";
-//						}
-//					cout << "}; ";
-//				);
+				DEBUG(
+					cout << "Node " << p->getLabel() << " has possible images { ";
+					for (auto a : nextImages) {
+							cout << eventSymbol[a.second] << a.first->getLabel() << " ";
+						}
+					cout << "}; ";
+				);
 				for (auto a : nextImages) {
 					ec.clear();
 					if (a.first == M->getHost(p) && a.second == M->getEvent(p)) {
@@ -452,10 +454,12 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 				} else {
 					ec = nei.getEventCount();
 				}
+				DEBUG(cout << "Retrieving event count from neighbour: " << ec << endl);
 				currentEventCount = ec;
 				double cost = CSD(ec);
 				if (cost < bestCost) {
 					bestCost = cost;
+					DEBUG(cout << "Best cost = " << bestCost << endl);
 					bestEventCount = ec;
 					bestMMap = mapDescription;
 					bestPrettyMap.str("");
