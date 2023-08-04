@@ -309,7 +309,7 @@ void testDuplicationHeight() {
 }
 
 void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
-	bool _debugging(true);
+	bool _debugging(false);
 	DEBUG(cout << hline << "Algorithm1" << endl << hline);
 	DEBUG(cout << "Input multi-map:" << endl << CMM);
 	CMM.doPageReconciliation();
@@ -350,8 +350,8 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					+ to_string(currentEventCount.dups) + "D + "
 					+ to_string(currentEventCount.losses) + "L"
 					+ "; best cost = " + to_string(bestCost));
-			DEBUG(cout << CMM);
-			break;
+//			DEBUG(cout << endl << CMM);
+//			break;
 		}
 		int nullMoves(0);
 		EventCount ec;
@@ -407,6 +407,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					int destinationDuplicationHeight(CMM.calcCombinedDuplicationHeight(a.first));
 					M->moveToHost(p, a.first, a.second);	// TODO think of a nice way that I don't have to move p twice..
 					int dupHeightOfPOnNewHost = M->getDuplicationHeight(p);
+					ec.dups = 0;
 					if (dupHeightOfPOnNewHost > destinationDuplicationHeight) {
 						ec.dups = 1;	// one more duplication required (can only go up by one)
 					}
