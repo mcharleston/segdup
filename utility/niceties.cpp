@@ -16,8 +16,8 @@ void advance_cursor() {
 }
 
 void update_message(std::string str) {
-	static int lastMessageLength(0);
-	for (unsigned int i(0); i<lastMessageLength; ++i) {
+	static unsigned int lastMessageLength(0);
+	for (unsigned int i(0); i < lastMessageLength; ++i) {
 		printf("\b");
 	}
 	printf(str.c_str());
