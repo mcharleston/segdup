@@ -38,7 +38,7 @@ bool _outputProbabilities(false);
 bool _saveTrace(false);
 bool _showSampledDistribution(false);
 int nSteps(1000);
-double Tinitial(10.0);
+double Tinitial(1.0);
 
 unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 
@@ -345,7 +345,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 		if (t % 10 == 0) {
 			advance_cursor();
 		}
-		if (t % 1000 == 0) {
+		if (t % 100 == 0) {
 			update_message(" steps = " + to_string(t) + "/" + to_string(nSteps)
 					+ "; score = "
 					+ to_string(exp(-CSD(currentEventCount) / (1.0*T))) + "; ec = "
