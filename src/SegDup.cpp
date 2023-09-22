@@ -38,7 +38,7 @@ bool _outputProbabilities(false);
 bool _saveTrace(false);
 bool _showSampledDistribution(false);
 int nSteps(1000);
-double Tinitial(1.0);
+double Tinitial(10.0);
 double Tfinal(0.0);
 
 unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -360,7 +360,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 		}
 		int nullMoves(0);
 		EventCount ec;
-		T = (Tinitial-Tfinal)*(1.0 - (1.0 * (t-1) / nSteps)) + Tfinal;
+		T = (Tinitial-Tfinal)*(1.0 - (1.0 * (t-1.0) / nSteps)) + Tfinal;
 		neighbours.clear();
 		numNeighbours = 0;
 		DEBUG(
@@ -405,21 +405,24 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					ec.codivs -= (oldEvent == codivergence) ? 1 : 0;
 
 					// Any change in number of losses?
+					int lossFactor = (p->hasParent()) ? 1 : 2;	// root of gene tree has no ancestral branch!
 					if (oldHost->isAncestralTo(nuHost)) {
 						// XXX look into this
 						DEBUG(cout << "old host is ancestral to new host" << endl);
-						if (p->hasParent()) {
-							ec.losses = -(nuHost->getTree()->getDistUp(nuHost, oldHost));
-						} else {
-							ec.losses = -2*(nuHost->getTree()->getDistUp(nuHost, oldHost));
-						}
+						ec.losses = -lossFactor*(nuHost->getTree()->getDistUp(nuHost, oldHost));
+//						if (p->hasParent()) {
+//							ec.losses = -(nuHost->getTree()->getDistUp(nuHost, oldHost));
+//						} else {
+//							ec.losses = -2*(nuHost->getTree()->getDistUp(nuHost, oldHost));
+//						}
 					} else if (nuHost->isAncestralTo(oldHost)) {
 						DEBUG(cout << "new host is ancestral to old host" << endl);
-						if (p->hasParent()) {
-							ec.losses = oldHost->getTree()->getDistUp(oldHost, nuHost);
-						} else {
-							ec.losses = 2*oldHost->getTree()->getDistUp(oldHost, nuHost);
-						}
+						ec.losses = lossFactor*(nuHost->getTree()->getDistUp(nuHost, oldHost));
+//						if (p->hasParent()) {
+//							ec.losses = oldHost->getTree()->getDistUp(oldHost, nuHost);
+//						} else {
+//							ec.losses = 2*oldHost->getTree()->getDistUp(oldHost, nuHost);
+//						}
 					} else {
 						DEBUG(cout << "old and new hosts are not ancestrally comparable" << endl);
 					}
