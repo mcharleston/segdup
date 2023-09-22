@@ -415,7 +415,11 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 						}
 					} else if (nuHost->isAncestralTo(oldHost)) {
 						DEBUG(cout << "new host is ancestral to old host" << endl);
-						ec.losses = oldHost->getTree()->getDistUp(oldHost, nuHost);
+						if (p->hasParent()) {
+							ec.losses = oldHost->getTree()->getDistUp(oldHost, nuHost);
+						} else {
+							ec.losses = 2*oldHost->getTree()->getDistUp(oldHost, nuHost);
+						}
 					} else {
 						DEBUG(cout << "old and new hosts are not ancestrally comparable" << endl);
 					}
