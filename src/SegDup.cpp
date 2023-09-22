@@ -39,6 +39,7 @@ bool _saveTrace(false);
 bool _showSampledDistribution(false);
 int nSteps(1000);
 double Tinitial(1.0);
+double Tfinal(0.0);
 
 unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 
@@ -359,7 +360,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 		}
 		int nullMoves(0);
 		EventCount ec;
-		T = Tinitial*(1.0 - (1.0 * t / nSteps));
+		T = (Tinitial-Tfinal)*(1.0 - (1.0 * t / nSteps)) + Tfinal;
 		neighbours.clear();
 		numNeighbours = 0;
 		DEBUG(
@@ -405,6 +406,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 
 					// Any change in number of losses?
 					if (oldHost->isAncestralTo(nuHost)) {
+						// XXX look into this
 						DEBUG(cout << "old host is ancestral to new host" << endl);
 						ec.losses = -(nuHost->getTree()->getDistUp(nuHost, oldHost));
 					} else if (nuHost->isAncestralTo(oldHost)) {
@@ -415,12 +417,18 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					}
 
 					// Any change in number of duplications?
-					int currentJointDupHeightHere(CMM.calcCombinedDuplicationHeight(oldHost));
-					int currentJointDupHeightThere(CMM.calcCombinedDuplicationHeight(nuHost));
+					int oldJointDupHeightHere(CMM.calcCombinedDuplicationHeight(oldHost));
+					int oldJointDupHeightThere(CMM.calcCombinedDuplicationHeight(nuHost));
+					DEBUG(cout << "oldJointDupHeightHere = " << oldJointDupHeightHere << endl);
+					DEBUG(cout << "oldJointDupHeightThere = " << oldJointDupHeightThere << endl);
 					M->moveToHost(p, nuHost, nuEvent);
+					CMM.movePToHost(p,oldHost,nuHost);	// XXX are both these function calls necessary?
 					int nuJointDupHeightHere(CMM.calcCombinedDuplicationHeight(oldHost));
 					int nuJointDupHeightThere(CMM.calcCombinedDuplicationHeight(nuHost));
+					DEBUG(cout << "nuJointDupHeightHere = " << nuJointDupHeightHere << endl);
+					DEBUG(cout << "nuJointDupHeightThere = " << nuJointDupHeightThere << endl);
 					M->moveToHost(p, oldHost, oldEvent);
+					CMM.movePToHost(p, nuHost, oldHost);	// XXX are both these function calls necessary?
 					// return p to its old place
 //					DEBUG(
 //							cout << "currentJointDupHeightHere = " << currentJointDupHeightHere << endl;
@@ -428,7 +436,8 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //							cout << "nuJointDupHeightHere = " << nuJointDupHeightHere << endl;
 //							cout << "nuJointDupHeightThere = " << nuJointDupHeightThere << endl;
 //							);
-					ec.dups = nuJointDupHeightThere - currentJointDupHeightThere + nuJointDupHeightHere - currentJointDupHeightHere;
+					ec.dups = nuJointDupHeightThere - oldJointDupHeightThere;
+					ec.dups += nuJointDupHeightHere - oldJointDupHeightHere;
 //					int oldHostDuplicationHeight(M->calcDuplicationHeight(p)); // the dup height of this p on its original host
 //					int destinationDuplicationHeight(CMM.calcCombinedDuplicationHeight(nuHost));	// the current JOINT dup height on the destination
 //					M->moveToHost(p, nuHost, nuEvent);
@@ -445,22 +454,32 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //					}
 
 					// Store this contender and its eventcount:
-					DEBUG(
-							cout << "delta ec = " << ec << ";\t";
-					);
+//					DEBUG(
+//					);
+					EventCount dec(ec);
 					ec += currentEventCount;
-					DEBUG(
-							cout << "ec+originalEventCount = " << ec << ";\t";
-					);
+					if (ec.dups < 0) {
+						cout << "step " << t << ": CRITICAL FAILURE!" << endl;
+						cout << "previous event count = " << currentEventCount << endl;
+						cout << "delta ec = " << dec << ";\t";
+						cout << "ec+originalEventCount = " << ec << ";\t";
+						exit(-1);
+					}
 					Association ass(p, nuHost, nuEvent);
 					double relativeSamplingProbability = exp(-CSD(ec) / (1.0*T));
 					DEBUG(
 							cout << "SCORE = " << relativeSamplingProbability << endl;
 					);
 					Contender con( ec, relativeSamplingProbability, p, nuHost, nuEvent, M );
+					if (con.getEventCount().dups < 0) {
+						cout << "step " << t << ": CRITICAL FAILURE!" << endl;
+						cout << "Contender event count = " << con.getEventCount().dups << endl;
+						exit(-1);
+					}
 					string label = "moving " + p->getLabel() + " to [" + eventSymbol[nuEvent] + "]" + nuHost->getLabel();
 					con.setLabel(label);
 					neighbours.insert(con);
+
 				}
 			}
 		}
@@ -500,6 +519,14 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					bestCost = cost;
 					DEBUG(cout << "Best cost = " << bestCost << endl);
 					bestEventCount = ec;
+					if (bestCost < 0) {
+						cout << "step " << t << ": best cost is NEGATIVE!" << endl;
+						cout << "\tbest cost = " << bestCost << endl;
+						cout << "\tbest event count = " << ec << endl;
+						bestPrettyMap.str("");
+						bestPrettyMap << CMM;
+						exit(-1);
+					}
 					bestMMap = mapDescription;
 					bestPrettyMap.str("");
 					bestPrettyMap << CMM;
@@ -537,7 +564,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //	cout << "final CSD: " << CSD(ecFinal) << endl;
 	cout << hline << "BEST Multiple CophyMap found by Algorithm 1:" << endl;
 	cout << bestEventCount << '\t' << bestCost << '\t' << bestMMap << '\t' << endl;
-	cout << bestPrettyMap.str();
+//	cout << bestPrettyMap.str();
 	cout << hline << endl;
 	if (_saveTrace) {
 		ftrace.close();
@@ -959,6 +986,10 @@ int main(int argn, char** argv) {
 			++i;
 			Tinitial = atof(argv[i]);
 			cout << "Setting Initial Temperature to " << Tinitial << endl;
+		} else if (!strcmp(argv[i], "-Tfinal")) {
+			++i;
+			Tinitial = atof(argv[i]);
+			cout << "Setting Final Temperature to " << Tfinal << endl;
 		} else if (!strcmp(argv[i], "-o")) {
 			++i;
 			if (!strcmp(argv[i], "probs")) {
@@ -970,6 +1001,11 @@ int main(int argn, char** argv) {
 				cout << "Setting Save a Trace to true" << endl;
 				_saveTrace = true;
 			}
+		} else if (!strcmp(argv[i], "--seed")) {
+			++i;
+			seed = atoi(argv[i]);
+			cout << "Setting random number seed to " << seed << " for testing / repeatability." << endl;
+			generator.seed(seed);
 		}
 	}
 	cout << hline;

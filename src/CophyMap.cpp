@@ -347,7 +347,7 @@ void CophyMap::moveToHost(Node* p, Node *h) {
 	}
 }
 void CophyMap::moveToHost(Node* p, Node *h, eventType e) {
-	// XXX MEMORY LEAK IN HERE?
+	// XXX MEMORY LEAK IN HERE? No it isn't :(
 //	DEBUG(cout << "Moving " << p->getLabel() << " from " << eventSymbol[event[p]] << phi[p]->getLabel()
 //			<< " to " << eventSymbol[e] << h->getLabel() << endl);
 	event[p] = e;

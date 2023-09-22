@@ -26,11 +26,11 @@ int CophyMultiMap::calcCombinedDuplicationHeight(Node *h) {
 	 */
 	bool _debugging(false);
 	DEBUG(cout << "Calculating duplication height for host node " << h->getLabel() << endl);
-//	if (invMap.size() == 0) {
+	if (invMap.size() == 0) {
 //		DEBUG(cout << "calculating inverse map since it is empty" << endl);
 		calcInverseMap();	// TODO find out why this isn't being updated properly by moving p-nodes around.
 		// XXX I've turned OFF the test to see if the invMap.size() is zero and it SEEMS to be working.. (MAC 2022/12/05)
-//	}
+	}
 	int dupHeight(0);
 	for (Node* p : invMap[h]) {
 //		DEBUG(cout << p->getLabel() << " is on host " << h->getLabel() << endl);
@@ -148,6 +148,11 @@ EventCount CophyMultiMap::countEvents() {
 
 EventCount CophyMultiMap::getEventCount(const std::string& mapDescription) {
 	return mmEventCounts.at(mapDescription);
+}
+
+void CophyMultiMap::movePToHost(Node* p, Node *oldHost, Node *nuHost) {
+	invMap[p].erase(oldHost);
+	invMap[p].insert(nuHost);
 }
 
 void CophyMultiMap::doPageReconciliation() {

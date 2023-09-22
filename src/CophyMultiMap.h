@@ -42,6 +42,8 @@ public:
 	EventCount getEventCount(const std::string& mapDescription);
 	std::map<Tree*, CophyMap*>& getMaps() { return maps; }
 
+	void movePToHost(Node* p, Node *oldHost, Node *nuHost);
+
 	inline void setDuplicationCost(double d) { duplicationCost = d; }
 	inline void storeEventCount(const std::string& label, const EventCount& ec) { mmEventCounts[label] = ec; }
 	inline void setLossCost(double l) { lossCost = l; }
