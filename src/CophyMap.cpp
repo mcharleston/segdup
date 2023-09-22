@@ -90,7 +90,7 @@ int CophyMap::calcDuplicationHeight(Node *p) {
 	/**
 	 * Calculate and return the maximum height of any subtree of this parasite/gene tree on the same host/species node as p.
 	 */
-	bool _debugging(false);
+	bool _debugging(true);
 	Node* h = phi[p];
 	p->dupHeight = 0;
 	DEBUG(cout << "This host/species node (" << h->getLabel() << ") has " << invPhi[h].size() << " occupants." << endl);

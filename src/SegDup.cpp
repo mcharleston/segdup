@@ -360,7 +360,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 		}
 		int nullMoves(0);
 		EventCount ec;
-		T = (Tinitial-Tfinal)*(1.0 - (1.0 * t / nSteps)) + Tfinal;
+		T = (Tinitial-Tfinal)*(1.0 - (1.0 * (t-1) / nSteps)) + Tfinal;
 		neighbours.clear();
 		numNeighbours = 0;
 		DEBUG(
@@ -415,6 +415,11 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					} else {
 						DEBUG(cout << "old and new hosts are not ancestrally comparable" << endl);
 					}
+					if (oldEvent == duplication && nuEvent == codivergence) {
+						ec.losses -= 2;
+					} else if (nuEvent == duplication && oldEvent == codivergence) {
+						ec.losses += 2;
+					}
 
 					// Any change in number of duplications?
 					int oldJointDupHeightHere(CMM.calcCombinedDuplicationHeight(oldHost));
@@ -437,7 +442,9 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //							cout << "nuJointDupHeightThere = " << nuJointDupHeightThere << endl;
 //							);
 					ec.dups = nuJointDupHeightThere - oldJointDupHeightThere;
-					ec.dups += nuJointDupHeightHere - oldJointDupHeightHere;
+					if (nuHost != oldHost) {
+						ec.dups += nuJointDupHeightHere - oldJointDupHeightHere;
+					}
 //					int oldHostDuplicationHeight(M->calcDuplicationHeight(p)); // the dup height of this p on its original host
 //					int destinationDuplicationHeight(CMM.calcCombinedDuplicationHeight(nuHost));	// the current JOINT dup height on the destination
 //					M->moveToHost(p, nuHost, nuEvent);
