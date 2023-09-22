@@ -1003,7 +1003,7 @@ int main(int argn, char** argv) {
 			cout << "Setting Initial Temperature to " << Tinitial << endl;
 		} else if (!strcmp(argv[i], "-Tfinal")) {
 			++i;
-			Tinitial = atof(argv[i]);
+			Tfinal = atof(argv[i]);
 			cout << "Setting Final Temperature to " << Tfinal << endl;
 		} else if (!strcmp(argv[i], "-o")) {
 			++i;
