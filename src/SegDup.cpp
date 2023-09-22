@@ -510,6 +510,13 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					nei.getMap()->moveToHost(nei.getParasite(), nei.getHost(), nei.getEvent());
 					DEBUG(nei.getMap()->checkValidHostOrdering());
 				}
+				if (_showSampledDistribution) {
+					CMM.toCompactString(mapDescription);
+//					if (t % 100 == 0) {
+//						cout << mapDescription << endl;
+//					}
+					sampledDistribution[mapDescription] += 1;
+				}
 				if (_cacheEventCounts) {
 					CMM.toCompactString(mapDescription);
 					sampledDistribution[mapDescription] += 1;
@@ -558,12 +565,13 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 	}
 	cout << endl;
 	if (_showSampledDistribution) {
-		cout << hline << "Sampled Distribution of Solutions:" << endl
+		ofstream fout("segdup-samples.csv");
+		fout << hline << "Sampled Distribution of Solutions:" << endl
 				<< "Events\tScore\tMap\tSamples" << endl;
 		for (auto dis : sampledDistribution) {
-			EventCount ec = CMM.getEventCount(dis.first);
-			cout << ec << '\t' << CSD(ec) << '\t' << dis.first << "\t" << dis.second << endl;
+			fout << dis.first << "\t" << dis.second << endl;
 		}
+		fout.close();
 	}
 //	cout << "FINAL Multiple CophyMap found by Algorithm 1:" << endl;
 //	EventCount ecFinal(CMM.countEvents());
