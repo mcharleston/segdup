@@ -55,6 +55,10 @@ double dran(double mult = 1.0) {
 	return mult * dunif(generator);
 }
 
+int iran(int max) {
+	return std::floor(dran(max * 1.0));
+}
+
 uint plran(float l, float u, float r) {
 	float y(fran());
 	float ex(r+1.0);
@@ -317,11 +321,19 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 	DEBUG(cout << "Initial reconciliation complete:" << endl << CMM);
 
 	CophyMultiMap nuMM(CMM);
+
+	vector<pair<Node*,CophyMap*>> allMoveableNodes;
 	map<CophyMap*, set<Node*>> iV;	// internal vertices of each parasite / gene tree
 	for (auto mpr : CMM.getMaps()) {
 		CophyMap* M = mpr.second;
 		Tree* G = M->getParasiteTree();
 		G->putInternalVertices(iV[M]);
+		G->gatherVertices();
+		for (auto v : G->getVertices()) {
+			if (!v.second->isLeaf()) {
+				allMoveableNodes.push_back(pair<Node*, CophyMap*>(v.second, M));
+			}
+		}
 	}
 
 	double T(0.0);
@@ -342,14 +354,20 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 	unsigned int numNeighbours(0);
 	EventCount currentEventCount = CMM.countEvents();
 
+	/**
+	 * Choose a node p at uniform random from all internal nodes of all gene trees.
+	 * Collect all nodes from all maps into one big array
+	 * Given p, calculate all potential new locations and note "no change" option too
+	 * Sample from that set according to the relative scores
+	 */
 	for (int t(1); t <= nSteps; ++t) {
 		if (t % 10 == 0) {
 			advance_cursor();
 		}
 		if (t % 100 == 0) {
 			update_message(" steps = " + to_string(t) + "/" + to_string(nSteps)
-					+ "; score = "
-					+ to_string(exp(-CSD(currentEventCount) / (1.0*T))) + "; ec = "
+					+ "; log score = "
+					+ to_string(-CSD(currentEventCount) / (1.0*T)) + "; ec = "
 					+ to_string(currentEventCount.codivs) + "C + "
 					+ to_string(currentEventCount.dups) + "D + "
 					+ to_string(currentEventCount.losses) + "L; cost = "
@@ -364,18 +382,26 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 		neighbours.clear();
 		numNeighbours = 0;
 		DEBUG(
-				cout << hline << "currentEventCount = " << currentEventCount << endl << hline;
+			cout << hline << "currentEventCount = " << currentEventCount << endl << hline;
 		);
-		for (auto mpr : CMM.getMaps()) {
+#define ChooseByNode
+#ifdef ChooseByNode
+		auto mpr = allMoveableNodes[iran(allMoveableNodes.size())];	// pick at random from allMoveableNodes
+		Node* p(mpr.first);
+		CophyMap *M = mpr.second;
+#else
+		for (auto mpr : CMM.getMaps()) {	// get all maps of the gene trees into single species tree
 			CophyMap* M = mpr.second;
 			for (Node* p : iV[M]) {
+#endif
+		// >>>>>>
 				set<pair<Node*, eventType>> nextImages = M->calcAvailableNewHosts(p);
 				_debugging = false;
 				DEBUG(
 					cout << "Node " << p->getLabel() << " has possible images { ";
 					for (auto a : nextImages) {
-							cout << eventSymbol[a.second] << a.first->getLabel() << " ";
-						}
+						cout << eventSymbol[a.second] << a.first->getLabel() << " ";
+					}
 					cout << "};" << endl;
 				);
 				for (auto a : nextImages) {
@@ -484,7 +510,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 						exit(-1);
 					}
 					Association ass(p, nuHost, nuEvent);
-					double relativeSamplingProbability = exp(-CSD(ec) / (1.0*T));
+					double relativeSamplingProbability = exp(-CSD(ec) / (1.0*T));	// XXX test just using dec not ec here
 					DEBUG(
 							cout << "SCORE = " << relativeSamplingProbability << endl;
 					);
@@ -497,9 +523,11 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					string label = "moving " + p->getLabel() + " to [" + eventSymbol[nuEvent] + "]" + nuHost->getLabel();
 					con.setLabel(label);
 					neighbours.insert(con);
-
+#ifdef ChooseByNode
+#else
 				}
 			}
+#endif
 		}
 		_debugging = true;
 		double total(0.0);
@@ -589,7 +617,8 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //	cout << CMM << ecFinal << endl << hline << endl;
 //	cout << "final CSD: " << CSD(ecFinal) << endl;
 	cout << hline << "BEST Multiple CophyMap found by Algorithm 1:" << endl;
-	cout << bestEventCount << '\t' << bestCost << '\t' << bestMMap << '\t' << endl;
+	cout << bestMMap << '\t' << endl;
+	cout << bestEventCount << '\t' << bestCost << endl;
 //	cout << bestPrettyMap.str();
 	cout << hline << endl;
 	if (_saveTrace) {

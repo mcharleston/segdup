@@ -13,8 +13,8 @@
 
 namespace segdup {
 
-const double defDuplicationCost(0.2);
-const double defLossCost(0.1);
+const double defDuplicationCost(5.0);
+const double defLossCost(1.0);
 
 class CophyMultiMap {
 private:
