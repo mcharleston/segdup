@@ -443,7 +443,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //						}
 					} else if (nuHost->isAncestralTo(oldHost)) {
 						DEBUG(cout << "new host is ancestral to old host" << endl);
-						ec.losses = lossFactor*(nuHost->getTree()->getDistUp(nuHost, oldHost));
+						ec.losses = lossFactor*(nuHost->getTree()->getDistUp(oldHost, nuHost));
 //						if (p->hasParent()) {
 //							ec.losses = oldHost->getTree()->getDistUp(oldHost, nuHost);
 //						} else {
@@ -551,9 +551,8 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 				}
 				if (_showSampledDistribution) {
 					CMM.toCompactString(mapDescription);
-//					if (t % 100 == 0) {
-//						cout << mapDescription << endl;
-//					}
+					mapDescription += "-D" + to_string(nei.getEventCount().dups)
+							+ "L" + to_string(nei.getEventCount().losses);
 					sampledDistribution[mapDescription] += 1;
 				}
 				if (_cacheEventCounts) {
@@ -606,11 +605,16 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 	if (_showSampledDistribution) {
 		ofstream fout("segdup-samples.csv");
 		fout << hline << "Sampled Distribution of Solutions:" << endl
-				<< "Events\tScore\tMap\tSamples" << endl;
+				<< "Map-Events\tSamples" << endl;
 		for (auto dis : sampledDistribution) {
 			fout << dis.first << "\t" << dis.second << endl;
 		}
 		fout.close();
+		cout << hline << "Sampled Distribution of Solutions:" << endl
+				<< "Map-Events\tSamples" << endl;
+		for (auto dis : sampledDistribution) {
+			cout << dis.first << "\t" << dis.second << endl;
+		}
 	}
 //	cout << "FINAL Multiple CophyMap found by Algorithm 1:" << endl;
 //	EventCount ecFinal(CMM.countEvents());
