@@ -433,7 +433,6 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					// Any change in number of losses?
 					int lossFactor = (p->hasParent()) ? 1 : 2;	// root of gene tree has no ancestral branch!
 					if (oldHost->isAncestralTo(nuHost)) {
-						// XXX look into this
 						DEBUG(cout << "old host is ancestral to new host" << endl);
 						ec.losses = -lossFactor*(nuHost->getTree()->getDistUp(nuHost, oldHost));
 //						if (p->hasParent()) {
@@ -571,14 +570,14 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					bestCost = cost;
 					DEBUG(cout << "Best cost = " << bestCost << endl);
 					bestEventCount = ec;
-					if (bestCost < 0) {
+					DEBUG(if (bestCost < 0) {
 						cout << "step " << t << ": best cost is NEGATIVE!" << endl;
 						cout << "\tbest cost = " << bestCost << endl;
 						cout << "\tbest event count = " << ec << endl;
 						bestPrettyMap.str("");
 						bestPrettyMap << CMM;
 						exit(-1);
-					}
+					});
 					bestMMap = mapDescription;
 					bestPrettyMap.str("");
 					bestPrettyMap << CMM;
