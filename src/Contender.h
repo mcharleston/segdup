@@ -58,6 +58,7 @@ public:
 	friend std::ostream& operator<<(std::ostream &os, const Contender& c);
 
 	void setLabel(const std::string& str) { label = str; }
+	void setScore(double d) { score = d; }
 };
 
 } /* namespace segdup */

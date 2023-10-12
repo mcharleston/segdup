@@ -24,7 +24,7 @@ int CophyMultiMap::calcCombinedDuplicationHeight(Node *h) {
 	 * XXX should not be re-counting for any node that hasn't moved
 	 *
 	 */
-	bool _debugging(true);
+	bool _debugging(false);
 	DEBUG(cout << "Calculating duplication height for host node " << h->getLabel() << endl);
 	if (invMap.size() == 0) {
 //		DEBUG(cout << "calculating inverse map since it is empty" << endl);

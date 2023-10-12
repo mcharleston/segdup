@@ -360,7 +360,9 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 	 * Given p, calculate all potential new locations and note "no change" option too
 	 * Sample from that set according to the relative scores
 	 */
+	double minScore(0.0);
 	for (int t(1); t <= nSteps; ++t) {
+		minScore = 1e10;	// start with a large number
 		if (t % 10 == 0) {
 			advance_cursor();
 		}
@@ -396,7 +398,6 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 #endif
 		// >>>>>>
 				set<pair<Node*, eventType>> nextImages = M->calcAvailableNewHosts(p);
-				_debugging = false;
 				DEBUG(
 					cout << "Node " << p->getLabel() << " has possible images { ";
 					for (auto a : nextImages) {
@@ -410,7 +411,9 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					if (nuHost == M->getHost(p) && nuEvent == M->getEvent(p)) {
 
 						double relativeSamplingProbability = exp(-CSD(currentEventCount) / (1.0*T));
-						Contender noChange( currentEventCount, relativeSamplingProbability, p, nuHost, nuEvent, M );
+						Contender noChange( currentEventCount, CSD(currentEventCount), p, nuHost, nuEvent, M );
+//						DEBUG(cout << "XXX entering CSD for no move: " << CSD(currentEventCount) << endl);
+						minScore = min(minScore, CSD(currentEventCount));
 
 						noChange._noMove = true;
 						noChange.setLabel("leaving " + p->getLabel() + " on [" + eventSymbol[nuEvent] + "]" + nuHost->getLabel());
@@ -509,11 +512,13 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 						exit(-1);
 					}
 					Association ass(p, nuHost, nuEvent);
-					double relativeSamplingProbability = exp(-CSD(ec) / (1.0*T));	// XXX test just using dec not ec here
-					DEBUG(
-							cout << "SCORE = " << relativeSamplingProbability << endl;
-					);
-					Contender con( ec, relativeSamplingProbability, p, nuHost, nuEvent, M );
+					minScore = min(minScore, CSD(ec));
+//					double relativeSamplingProbability = exp(-CSD(ec) / (1.0*T));	// XXX test just using dec not ec here
+//					DEBUG(
+//							cout << "SCORE = " << relativeSamplingProbability << endl;
+//					);
+					Contender con( ec, CSD(ec), p, nuHost, nuEvent, M );
+//					DEBUG(cout << "XXX setting contender score to " << CSD(ec) << endl);
 					if (con.getEventCount().dups < 0) {
 						cout << "step " << t << ": CRITICAL FAILURE!" << endl;
 						cout << "Contender event count = " << con.getEventCount().dups << endl;
@@ -527,6 +532,12 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 				}
 			}
 #endif
+		}
+		double d;
+		for (auto nei : neighbours) {
+			d = nei.getScore() - minScore;
+			DEBUG(cout << "relative CSD for this contender = " << d << endl);
+			nei.setScore(exp(-d / (1.0*T)));
 		}
 		_debugging = true;
 		double total(0.0);
