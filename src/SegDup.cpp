@@ -348,7 +348,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 	int sampleNumber(0);
 	if (_saveTrace) {
 		ftrace.open("segdup-trace.csv", std::ofstream::out);
-		ftrace << "i,c,d,l,s" << endl;
+		ftrace << "i,c,d,l,s,pr" << endl;
 	}
 	ostringstream bestPrettyMap;
 	unsigned int numNeighbours(0);
@@ -409,9 +409,10 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					Node* nuHost = a.first;
 					eventType nuEvent = a.second;
 					if (nuHost == M->getHost(p) && nuEvent == M->getEvent(p)) {
-
 						double relativeSamplingProbability = exp(-CSD(currentEventCount) / (1.0*T));
+//						cerr << t << ',' << T << ',' << p << ',' << CSD(currentEventCount) << endl;
 						Contender noChange( currentEventCount, CSD(currentEventCount), p, nuHost, nuEvent, M );
+//						Contender noChange( currentEventCount, relativeSamplingProbability, p, nuHost, nuEvent, M );
 //						DEBUG(cout << "XXX entering CSD for no move: " << CSD(currentEventCount) << endl);
 						minScore = min(minScore, CSD(currentEventCount));
 
@@ -512,11 +513,12 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 						exit(-1);
 					}
 					Association ass(p, nuHost, nuEvent);
-					minScore = min(minScore, CSD(ec));
 //					double relativeSamplingProbability = exp(-CSD(ec) / (1.0*T));	// XXX test just using dec not ec here
+					minScore = min(minScore, CSD(ec));
 //					DEBUG(
 //							cout << "SCORE = " << relativeSamplingProbability << endl;
 //					);
+//					Contender con( ec, relativeSamplingProbability, p, nuHost, nuEvent, M );
 					Contender con( ec, CSD(ec), p, nuHost, nuEvent, M );
 //					DEBUG(cout << "XXX setting contender score to " << CSD(ec) << endl);
 					if (con.getEventCount().dups < 0) {
@@ -527,6 +529,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					string label = "moving " + p->getLabel() + " to [" + eventSymbol[nuEvent] + "]" + nuHost->getLabel();
 					con.setLabel(label);
 					neighbours.insert(con);
+//					cerr << t << ',' << T << ',' << p << ',' << con.getScore() << endl;
 #ifdef ChooseByNode
 #else
 				}
@@ -534,21 +537,30 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 #endif
 		}
 		double d;
-		for (auto nei : neighbours) {
-			d = nei.getScore() - minScore;
-			DEBUG(cout << "relative CSD for this contender = " << d << endl);
-			nei.setScore(exp(-d / (1.0*T)));
-		}
 		_debugging = true;
 		double total(0.0);
+		set<Contender> adjustedNeighbours;
 		for (auto nei : neighbours) {
+			d = nei.getScore() - minScore; // XXX This is a fudge...
+			cerr << "d=" << d << endl;
+			DEBUG(cout << "relative CSD for this contender = " << d << endl);
+			nei.setScore(exp(-d / (1.0*T)));
 			total += nei.getScore();
-//			DEBUG(cout << "\tscore of " << nei.getEventCount() << " is " << nei.getScore() << endl);
+			adjustedNeighbours.insert(nei);
+			DEBUG(cout << "T = " << T << "; new score = " << nei.getScore() << endl);
+			DEBUG(cout << "new total " << total << endl);
 		}
+//		for (auto nei : neighbours) {
+//		}
 		numNeighbours += neighbours.size();
+		DEBUG(cout << "total before dran() = " << total << endl);
 		double r = dran(total);
+		DEBUG(cout << "total after dran() = " << total << endl);
+		/***********************************
+		 * Now the sampling!
+		 ***********************************/
 		DEBUG(cout << "initial r = " << r << " from U[0, " << total << "]" << endl);
-		for (auto nei : neighbours) {
+		for (auto nei : adjustedNeighbours) {
 			if (r <= nei.getScore()) {
 				DEBUG(cout << "r=" << r << "; score=" << nei.getScore() << endl);
 				if (nei._noMove) {
@@ -600,7 +612,10 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 				if (_saveTrace) {
 					++sampleNumber;
 //					ftrace << sampleNumber << ",\"" << mapDescription << "\"," << to_string(CSD(ec)) << endl;
-					ftrace << sampleNumber << ',' << ec.codivs << ',' << ec.dups << ',' << ec.losses << ',' << to_string(CSD(ec)) << endl;
+					ftrace << sampleNumber << ',' << ec.codivs << ',' << ec.dups << ','
+							<< ec.losses << ',' << to_string(CSD(ec)) << ','
+							<< nei.getScore()
+							<< endl;
 				}
 				DEBUG(cout << nei.getLabel() << '\t' << nei.getScore() << endl);
 				break;
@@ -620,11 +635,11 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 			fout << dis.first << "\t" << dis.second << endl;
 		}
 		fout.close();
-		cout << hline << "Sampled Distribution of Solutions:" << endl
-				<< "Map-Events\tSamples" << endl;
-		for (auto dis : sampledDistribution) {
-			cout << dis.first << "\t" << dis.second << endl;
-		}
+//		cout << hline << "Sampled Distribution of Solutions:" << endl
+//				<< "Map-Events\tSamples" << endl;
+//		for (auto dis : sampledDistribution) {
+//			cout << dis.first << "\t" << dis.second << endl;
+//		}
 	}
 //	cout << "FINAL Multiple CophyMap found by Algorithm 1:" << endl;
 //	EventCount ecFinal(CMM.countEvents());

@@ -46,7 +46,7 @@ public:
 	CophyMap* getMap() { return M; }
 	Node* getParasite() { return assoc.p; }
 	Node* getParasite() const { return assoc.p; }
-	double& getScore() { return score; }
+	double getScore() { return score; }
 	double getScore() const { return score; }
 
 	void operator*=(double d) { score *= d; }
