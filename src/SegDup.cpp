@@ -5,24 +5,31 @@
  *      Author: mac
  */
 
+#include <sys/types.h>
+#include <algorithm>
 #include <chrono>
 #include <cmath>	// for exp
+#include <cstdlib>
 #include <cstring> // for strcmp
-#include <functional> // for transform
+#include <fstream>
+#include <iostream>
 #include <map>
 #include <random>
+#include <set>
 #include <sstream>
-#include <fstream>
-#include <stdio.h>
-
-#include "Node.h"
-#include "Tree.h"
-#include "CophyMap.h"
-#include "CophyMultiMap.h"
-#include "Contender.h"
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "../utility/debugging.h"
 #include "../utility/niceties.h"
+#include "Contender.h"
+#include "CophyMap.h"
+#include "CophyMultiMap.h"
+#include "EventCount.h"
+#include "Node.h"
+#include "NodeMap.h"
+#include "Tree.h"
 
 /**
  * Input to an instance includes whether each node is mapped to a D or S
@@ -542,7 +549,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 		set<Contender> adjustedNeighbours;
 		for (auto nei : neighbours) {
 			d = nei.getScore() - minScore; // XXX This is a fudge...
-			cerr << "d=" << d << endl;
+//			cerr << "d=" << d << endl;
 			DEBUG(cout << "relative CSD for this contender = " << d << endl);
 			nei.setScore(exp(-d / (1.0*T)));
 			total += nei.getScore();
@@ -573,8 +580,14 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 				}
 				if (_showSampledDistribution) {
 					CMM.toCompactString(mapDescription);
+#define OYGOUYG
+#ifdef OYGOUYG
+					EventCount totalEC = CMM.countEvents();
+					mapDescription += "-D" + to_string(totalEC.dups) + "L" + to_string(totalEC.losses);
+#else
 					mapDescription += "-D" + to_string(nei.getEventCount().dups)
 							+ "L" + to_string(nei.getEventCount().losses);
+#endif		
 					sampledDistribution[mapDescription] += 1;
 				}
 				if (_cacheEventCounts) {

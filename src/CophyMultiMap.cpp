@@ -24,16 +24,16 @@ int CophyMultiMap::calcCombinedDuplicationHeight(Node *h) {
 	 * XXX should not be re-counting for any node that hasn't moved
 	 *
 	 */
-	bool _debugging(false);
+	bool _debugging(true);
 	DEBUG(cout << "Calculating duplication height for host node " << h->getLabel() << endl);
-	if (invMap.size() == 0) {
-//		DEBUG(cout << "calculating inverse map since it is empty" << endl);
+//	if (invMap.size() == 0) {
+		DEBUG(cout << "calculating inverse map since it is empty" << endl);
 		calcInverseMap();	// TODO find out why this isn't being updated properly by moving p-nodes around.
 		// XXX I've turned OFF the test to see if the invMap.size() is zero and it SEEMS to be working.. (MAC 2022/12/05)
-	}
+//	}
 	int dupHeight(0);
 	for (Node* p : invMap[h]) {
-//		DEBUG(cout << p->getLabel() << " is on host " << h->getLabel() << endl);
+		DEBUG(cout << p->getLabel() << " is on host " << h->getLabel() << endl);
 		CophyMap* M = maps[p->getTree()];
 //		int height = (M->getEvent(p) == duplication) ? 1 : 0;	// this is probably dodgy because it treats "noevent" and "loss" as "codivergence"
 //		DEBUG(cout << "\tinitial height for this lineage is " << height << endl);
@@ -49,6 +49,7 @@ int CophyMultiMap::calcCombinedDuplicationHeight(Node *h) {
 //		}
 		DEBUG(cout << "Considering node " << p->getLabel() << " on tree " << p->getTree()->getLabel() << endl);
 		dupHeight = max<int>(dupHeight, M->getDuplicationHeight(p));
+		DEBUG(cout << "dupHeight = " << M->getDuplicationHeight(p) << endl);
 	}
 	DEBUG(cout << "\tduplication height is " << dupHeight << endl);
 	DEBUG(cout << *this << endl);
@@ -78,7 +79,7 @@ EventCount CophyMultiMap::countEvents() {
 	/**
 	 *
 	 */
-	bool _debugging(false);
+	bool _debugging(true);
 	EventCount E;
 	Tree *H;
 	Node *p, *h;
@@ -92,14 +93,18 @@ EventCount CophyMultiMap::countEvents() {
 	}
 	int nLosses;
 	DEBUG(cout << "CophyMultiMap:countEvents()\n");
+	DEBUG(cout << *this);
+	DEBUG(cout << "1. Losses:" << endl);
 	for (auto mpr : maps) {
 		CophyMap* M = mpr.second;
 		NodeMap& phi = M->getPhi();
 		// Count duplications and losses for separate maps:
 		H = phi.getHostTree();
+//		DEBUG(cout << (*H) << endl);
 		for (auto m : phi.getData()) {
 			p = m.first;
 			h = m.second;
+			DEBUG(cout << "p=" << p->getLabel() << "; h=" << h->getLabel() << endl);
 	//		E.codivs += (m.second.second == 0);	// m is of form (p, (h, type))
 	//		E.dups += (m.second.second == 1);
 			if (m.first->isLeaf()) {
@@ -107,8 +112,8 @@ EventCount CophyMultiMap::countEvents() {
 			} else {
 				if (M->getEvent(p) == codivergence) {
 					++E.codivs;
-					DEBUG(cout << "counting events for " << p->getLabel() << ':' << h->getLabel() << ": this is a ");
-					DEBUG(cout << "CODIVERGENCE" << endl);
+//					DEBUG(cout << "counting events for " << p->getLabel() << ':' << h->getLabel() << ": this is a ");
+//					DEBUG(cout << "CODIVERGENCE" << endl);
 				}
 			}
 			if (m.first->hasParent()) {
@@ -118,7 +123,7 @@ EventCount CophyMultiMap::countEvents() {
 				E.losses += nLosses;
 				DEBUG(cout << "counting losses leading to " << p->getLabel() << ":"
 						<< h->getLabel() << " -- number of nodes between "
-						<< h->getParent()->getLabel() << " and "
+						<< phi[p->getParent()]->getLabel() << " and "
 						<< h->getLabel()
 						<< " is " << H->getDistUp(h, phi[p->getParent()])
 						<< endl);
@@ -130,19 +135,23 @@ EventCount CophyMultiMap::countEvents() {
 		}
 	}
 	// now count segmental duplications (which may be shared by multiple tree-maps):
+	DEBUG(cout << "2. Duplications" << endl);
 	map<string, Node*>& V = H->getVertices();
-	set<Node*> countedHosts;
-	for (auto iter : V) {
-		if (countedHosts.count(iter.second) > 0) {
-			continue;
+	DEBUG(
+		for (auto iter : V) {
+			cout << iter.first << ",";
 		}
+		cout << endl;
+	);
+	for (auto iter : V) {
+//		DEBUG(cout << "counting seg dups on host node " << iter.first << endl);
 		E.dups += calcCombinedDuplicationHeight(iter.second);
-		countedHosts.insert(iter.second);
 		// XXX assumes all segmental duplications are permitted -- everything is adjacent!
 	}
 	if (_cacheEventCounts) {
 		storeEventCount(description, E);
 	}
+	DEBUG(cout << "Total event count for this multimap: " << E << endl);
 	return E;
 }
 

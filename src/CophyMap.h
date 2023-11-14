@@ -47,6 +47,9 @@ public:
 
 	void checkValidHostOrdering();
 
+	void clearAllDupHeights(Node *p);
+	void clearDupHeightsOnHost(Node* p, Node *h);
+
 	EventCount countEvents();
 	std::string describeEvent(eventType e);
 	inline std::string describeEvent(Node *p) { return describeEvent(event[p]); }
