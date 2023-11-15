@@ -160,8 +160,16 @@ EventCount CophyMultiMap::getEventCount(const std::string& mapDescription) {
 }
 
 void CophyMultiMap::movePToHost(Node* p, Node *oldHost, Node *nuHost) {
-	invMap[p].erase(oldHost);
-	invMap[p].insert(nuHost);
+//	invMap[p].erase(oldHost);
+//	invMap[p].insert(nuHost);
+	invMap[oldHost].erase(p);
+	invMap[nuHost].insert(p);
+	for (auto p : invMap[oldHost]) {
+		p->dupHeight = -1;
+	}
+	for (auto p : invMap[nuHost]) {
+		p->dupHeight = -1;
+	}
 }
 
 void CophyMultiMap::doPageReconciliation() {

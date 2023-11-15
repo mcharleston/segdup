@@ -388,12 +388,14 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 		int nullMoves(0);
 		EventCount ec;
 		T = (Tinitial-Tfinal)*(1.0 - (1.0 * (t-1.0) / nSteps)) + Tfinal;
+//		double x = 1.0 * t / nSteps;
+//		T = Tinitial*1.5/(1.0 + 0.2 * sqrt(x*x*t+1.0));	// function 4 / sqrts	// XXX looks good on ybc-case3 and on Guido et al..
 		neighbours.clear();
 		numNeighbours = 0;
 		DEBUG(
 			cout << hline << "currentEventCount = " << currentEventCount << endl << hline;
 		);
-#define ChooseByNode
+#define ChooseByNodeOFF
 #ifdef ChooseByNode
 		auto mpr = allMoveableNodes[iran(allMoveableNodes.size())];	// pick at random from allMoveableNodes
 		Node* p(mpr.first);
@@ -403,7 +405,6 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 			CophyMap* M = mpr.second;
 			for (Node* p : iV[M]) {
 #endif
-		// >>>>>>
 				set<pair<Node*, eventType>> nextImages = M->calcAvailableNewHosts(p);
 				DEBUG(
 					cout << "Node " << p->getLabel() << " has possible images { ";
@@ -580,8 +581,8 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 				}
 				if (_showSampledDistribution) {
 					CMM.toCompactString(mapDescription);
-#define OYGOUYG
-#ifdef OYGOUYG
+#define UseLongMapDescription
+#ifdef UseLongMapDescription
 					EventCount totalEC = CMM.countEvents();
 					mapDescription += "-D" + to_string(totalEC.dups) + "L" + to_string(totalEC.losses);
 #else
@@ -1077,7 +1078,7 @@ int main(int argn, char** argv) {
 		} else if (!strcmp(argv[i], "-l")) {
 			++i;
 			lossCost = atof(argv[i]);
-			CMM.setLossCost(lossCost);	// TODO Settle on either a global variable for this cost or just the instance variable!
+			CMM.setLossCost(lossCost);
 			cout << "Setting LossCost to " << lossCost << endl;
 		} else if (!strcmp(argv[i], "-Tinit")) {
 			++i;
@@ -1103,6 +1104,10 @@ int main(int argn, char** argv) {
 			seed = atoi(argv[i]);
 			cout << "Setting random number seed to " << seed << " for testing / repeatability." << endl;
 			generator.seed(seed);
+		} else {
+			cout << "I cannot understand this argument: \"" << argv[i] << "\", which is number " << i << " in the input." << endl
+					<< "Rather than continue with a potentially erroneous input I am quitting." << endl;
+			return 1;
 		}
 	}
 	cout << hline;

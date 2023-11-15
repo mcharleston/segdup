@@ -123,6 +123,7 @@ int CophyMap::getDuplicationHeight(Node* p) {
 	}
 	return p->dupHeight;
 }
+
 void CophyMap::checkValidHostOrdering() {
 	std::map<std::string, Node*>& V = P->getVertices();
 	for (auto vpr : V) {
