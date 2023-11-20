@@ -393,7 +393,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 		DEBUG(
 			cout << hline << "currentEventCount = " << currentEventCount << endl << hline;
 		);
-#define ChooseByNode
+#define ChooseByNodeOFF
 #ifdef ChooseByNode
 		auto mpr = allMoveableNodes[iran(allMoveableNodes.size())];	// pick at random from allMoveableNodes
 		Node* p(mpr.first);
