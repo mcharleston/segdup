@@ -1,0 +1,55 @@
+case0:
+with S, c = 0
+with D, c = 3
+with T = 10, probs = 0.5744425 0.4255575
+
+case0b:
+lower D: c = 1
+higher D: c = 3
+with T = 10, 0.549834 0.450166
+
+case0c:
+lowest D: c = 1
+middle D: c = 3
+higher D: c = 5
+with T = 10, 0.4017596 0.3289329 0.2693075
+
+case0d:
+S: c = 0
+lower D: c = 3
+higher D: c = 5
+0.4260125 0.3155978 0.2583897
+
+test-case1:
+2xS: c = 0
+1S + 1D: c = 3 	(2 cases)
+2D: c = 5
+T = 10
+0.3238167 0.2398893 0.2398893 0.1964047
+
+test-case2:
+2 lower D: c = 2
+1 lower 1 upper D: c = 4
+2 upper D: c = 5
+T = 10
+0.3906938 0.3198731 0.2894331
+
+test-case3:
+2 lower D + S: 2
+2 lower D + D: 5
+1 lower D + S: 4
+1 lower D + D: 6
+2 upper D + S: 5
+2 upper D + D: 7
+T = 10
+0.2184733 0.1618490 0.1788708 0.1464470 0.1618490 0.1325108
+
+test-case4:
+2 lower D + lower D: 2
+2 lower D + upper D: 3+2 = 5
+1 lower D + lower D: 2+2 = 4
+1 lower D + upper D: 2+4 = 6
+2 upper D + lower D: 3+3 = 6
+2 upper D + upper D: 2+5 = 7
+T = 10
+0.2218909 0.1643808 0.1816689 0.1487379 0.1487379 0.1345836
