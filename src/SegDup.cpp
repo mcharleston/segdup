@@ -48,6 +48,8 @@ int nSteps(1000);
 double Tinitial(10.0);
 double Tfinal(0.0);
 
+std::ofstream summaryfile;
+
 unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 
 std::default_random_engine generator(seed);
@@ -395,7 +397,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 		DEBUG(
 			cout << hline << "currentEventCount = " << currentEventCount << endl << hline;
 		);
-#define ChooseByNodeOFF
+#define ChooseByNode
 #ifdef ChooseByNode
 		auto mpr = allMoveableNodes[iran(allMoveableNodes.size())];	// pick at random from allMoveableNodes
 		Node* p(mpr.first);
@@ -667,6 +669,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 	if (_saveTrace) {
 		ftrace.close();
 	}
+	summaryfile << bestEventCount.codivs << ',' << bestEventCount.dups << ',' << bestEventCount.losses << ',' << bestCost << endl;
 }
 
 void doTestCase1() {
@@ -1027,6 +1030,8 @@ int main(int argn, char** argv) {
 		return 0;
 	}
 	CophyMultiMap CMM;
+	summaryfile.open("summary.csv", std::ios_base::app);
+	summaryfile << "codivs,dups,losses,cost\n";
 	vector<CophyMap*> M;
 	uint numGeneTrees(0);
 	Tree *S(nullptr);
