@@ -75,22 +75,14 @@ void CophyMultiMap::clear() {
 	lossCost = defLossCost;
 }
 
-EventCount CophyMultiMap::countEvents() {
+void CophyMultiMap::countEvents() {
 	/**
 	 *
 	 */
 	bool _debugging(true);
-	EventCount E;
 	Tree *H;
 	Node *p, *h;
 	string description;
-	if	(_cacheEventCounts) {
-		toCompactString(description);
-		if (mmEventCounts.find(description) != mmEventCounts.end()) {
-//			cerr << "size of score table = " << mmEventCounts.size() << endl;
-			return mmEventCounts[description];
-		}
-	}
 	int nLosses;
 	DEBUG(cout << "CophyMultiMap:countEvents()\n");
 	DEBUG(cout << *this);
@@ -111,7 +103,7 @@ EventCount CophyMultiMap::countEvents() {
 				DEBUG(cout << p->getLabel() << " is a leaf: do not count duplication or codivergence events!" << endl);
 			} else {
 				if (M->getEvent(p) == codivergence) {
-					++E.codivs;
+					++currentEventCount.codivs;
 //					DEBUG(cout << "counting events for " << p->getLabel() << ':' << h->getLabel() << ": this is a ");
 //					DEBUG(cout << "CODIVERGENCE" << endl);
 				}
@@ -120,7 +112,7 @@ EventCount CophyMultiMap::countEvents() {
 				nLosses = H->getDistUp(h, phi[p->getParent()]);
 				nLosses -= (M->getEvent(p->getParent()) == codivergence) ? 1 : 0;
 				nLosses = max(0, nLosses);
-				E.losses += nLosses;
+				currentEventCount.losses += nLosses;
 				DEBUG(cout << "counting losses leading to " << p->getLabel() << ":"
 						<< h->getLabel() << " -- number of nodes between "
 						<< phi[p->getParent()]->getLabel() << " and "
@@ -145,17 +137,21 @@ EventCount CophyMultiMap::countEvents() {
 	);
 	for (auto iter : V) {
 //		DEBUG(cout << "counting seg dups on host node " << iter.first << endl);
-		E.dups += calcCombinedDuplicationHeight(iter.second);
+		currentEventCount.dups += calcCombinedDuplicationHeight(iter.second);
 		// XXX assumes all segmental duplications are permitted -- everything is adjacent!
 	}
 	if (_cacheEventCounts) {
-		storeEventCount(description, E);
+		storeEventCount(description, currentEventCount);
 	}
-	DEBUG(cout << "Total event count for this multimap: " << E << endl);
-	return E;
+	DEBUG(cout << "Total event count for this multimap: " << currentEventCount << endl);
+
 }
 
-EventCount CophyMultiMap::getEventCount(const std::string& mapDescription) {
+EventCount& CophyMultiMap::getEventCount() {
+	return currentEventCount;
+}
+
+EventCount& CophyMultiMap::getEventCount(const std::string& mapDescription) {
 	return mmEventCounts.at(mapDescription);
 }
 
@@ -182,6 +178,20 @@ void CophyMultiMap::doPageReconciliation() {
 	}
 }
 
+void CophyMultiMap::putAllMoveableNodes() {
+	map<CophyMap*, set<Node*>> iV;	// internal vertices of each parasite / gene tree
+	for (auto mpr : getMaps()) {
+		CophyMap* M = mpr.second;
+		Tree* G = M->getParasiteTree();
+		G->putInternalVertices(iV[M]);
+		G->gatherVertices();
+		for (auto v : G->getVertices()) {
+			if (!v.second->isLeaf()) {
+				allMoveableNodes.push_back(pair<Node*, CophyMap*>(v.second, M));
+			}
+		}
+	}
+}
 void CophyMultiMap::toCompactString(string & str) {
 	str = "";
 //	EventCount ec = countEvents();

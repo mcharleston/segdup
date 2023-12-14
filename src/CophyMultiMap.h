@@ -20,7 +20,9 @@ class CophyMultiMap {
 private:
 	std::map<Tree*, CophyMap*> maps; // Parasite tree -> Map
 	std::map<std::string, EventCount> mmEventCounts;
+	std::vector<std::pair<Node*,CophyMap*>> allMoveableNodes;
 	inversenodemap invMap;
+	EventCount currentEventCount;
 	double duplicationCost;
 	double lossCost;
 public:
@@ -32,18 +34,20 @@ public:
 	void calcInverseMap();
 	void clear();
 
-	EventCount countEvents();
+	EventCount& getEventCount(const std::string& mapDescription);
+	EventCount& getEventCount();
+	void countEvents();	// XXX change to count events
 	void doPageReconciliation();
 
 //	CophyMap*& operator[](Tree* P) { return maps[P]; }
 
 //	void toShortDescription(std::string& str);
 
-	EventCount getEventCount(const std::string& mapDescription);
 	std::map<Tree*, CophyMap*>& getMaps() { return maps; }
 
 	void movePToHost(Node* p, Node *oldHost, Node *nuHost);
 
+	void putAllMoveableNodes();
 	inline void setDuplicationCost(double d) { duplicationCost = d; }
 	inline void storeEventCount(const std::string& label, const EventCount& ec) { mmEventCounts[label] = ec; }
 	inline void setLossCost(double l) { lossCost = l; }

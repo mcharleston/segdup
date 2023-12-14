@@ -22,13 +22,17 @@
 #include <vector>
 
 #include "../utility/debugging.h"
+#include "../utility/myrandom.h"
 #include "../utility/niceties.h"
+
 #include "Contender.h"
 #include "CophyMap.h"
 #include "CophyMultiMap.h"
+#include "DupMove.h"
 #include "EventCount.h"
 #include "Node.h"
 #include "NodeMap.h"
+#include "SingleNodeMove.h"
 #include "Tree.h"
 
 /**
@@ -48,31 +52,10 @@ int nSteps(1000);
 double Tinitial(10.0);
 double Tfinal(0.0);
 
+extern std::mt19937 generator;
+extern unsigned seed;
+
 std::ofstream summaryfile;
-
-unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-
-std::default_random_engine generator(seed);
-std::uniform_real_distribution<float> runif(0.0, 1.0);
-std::uniform_real_distribution<double> dunif(0.0, 1.0);
-
-float fran() {
-	return runif(generator);
-}
-
-double dran(double mult = 1.0) {
-	return mult * dunif(generator);
-}
-
-int iran(int max) {
-	return std::floor(dran(max * 1.0));
-}
-
-uint plran(float l, float u, float r) {
-	float y(fran());
-	float ex(r+1.0);
-	return static_cast<uint>( std::pow( std::pow(u,ex) - std::pow(l, ex)*y + std::pow(l, ex), 1.0/ex ) );
-}
 
 double lossCost(defLossCost);			// XXX
 double duplicationCost(defDuplicationCost);	// XXX MAGIC number!
@@ -322,37 +305,365 @@ void testDuplicationHeight() {
 	cout << "Counting events with segmental duplications" << endl << CMM.countEvents() << endl;
 }
 
-void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
+//void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
+//	bool _debugging(true);
+//	DEBUG(cout << hline << "Algorithm1" << endl << hline);
+//	DEBUG(cout << "Input multi-map:" << endl << CMM);
+//	CMM.doPageReconciliation();
+//	DEBUG(cout << "Initial reconciliation complete:" << endl << CMM);
+//
+//	CophyMultiMap nuMM(CMM);
+//
+//	vector<pair<Node*,CophyMap*>> allMoveableNodes;
+//	CMM.putAllMoveableNodes(allMoveableNodes);
+//
+//	double T(0.0);
+//	std::set<Contender> neighbours;
+//	string mapDescription;
+//	CMM.toCompactString(mapDescription);
+////	cout << "ORIGINAL MAP:" << endl << CMM << "Events\tScore\tMap\n" << ecoriginal << '\t' << CSD(ecoriginal) << '\t' << mapDescription << endl;
+//	string bestMMap;
+//	EventCount bestEventCount;
+//	double bestCost(1e100);	// 10^100 should be enough!!
+//	ofstream ftrace;
+//	int sampleNumber(0);
+//	if (_saveTrace) {
+//		ftrace.open("segdup-trace.csv", std::ofstream::out);
+//		ftrace << "i,c,d,l,s,pr" << endl;
+//	}
+//	ostringstream bestPrettyMap;
+//	unsigned int numNeighbours(0);
+//	EventCount currentEventCount = CMM.countEvents();
+//
+//	/**
+//	 * Choose a node p at uniform random from all internal nodes of all gene trees.
+//	 * Collect all nodes from all maps into one big array
+//	 * Given p, calculate all potential new locations and note "no change" option too
+//	 * Sample from that set according to the relative scores
+//	 */
+//	double minScore(0.0);
+//	for (int t(1); t <= nSteps; ++t) {
+//		minScore = 1e10;	// start with a large number
+//		if (t % 10 == 0) {
+//			advance_cursor();
+//		}
+//		if (t % 100 == 0) {
+//			update_message(" steps = " + to_string(t) + "/" + to_string(nSteps)
+//					+ "; log score = "
+//					+ to_string(-CSD(currentEventCount) / (1.0*T)) + "; ec = "
+//					+ to_string(currentEventCount.codivs) + "C + "
+//					+ to_string(currentEventCount.dups) + "D + "
+//					+ to_string(currentEventCount.losses) + "L; cost = "
+//					+ to_string(CSD(currentEventCount))
+//					+ "; best cost = " + to_string(bestCost));
+//			DEBUG(cout << endl << CMM);
+////			break;
+//		}
+//		int nullMoves(0);
+//		EventCount ec;
+//		T = (Tinitial-Tfinal)*(1.0 - (1.0 * (t-1.0) / nSteps)) + Tfinal;
+////		double x = 1.0 * t / nSteps;
+////		T = Tinitial*1.5/(1.0 + 0.2 * sqrt(x*x*t+1.0));	// function 4 / sqrts	// XXX looks good on ybc-case3 and on Guido et al..
+//		neighbours.clear();
+//		numNeighbours = 0;
+//		DEBUG(
+//			cout << hline << "currentEventCount = " << currentEventCount << endl << hline;
+//		);
+//#define ChooseByNode
+//#ifdef ChooseByNode
+//		auto mpr = allMoveableNodes[iran(allMoveableNodes.size())];	// pick at random from allMoveableNodes
+//		Node* p(mpr.first);
+//		CophyMap *M = mpr.second;
+//#else
+//		for (auto mpr : CMM.getMaps()) {	// get all maps of the gene trees into single species tree
+//			CophyMap* M = mpr.second;
+//			for (Node* p : iV[M]) {
+//#endif
+//				set<pair<Node*, eventType>> nextImages = M->calcAvailableNewHosts(p);
+//				DEBUG(
+//					cout << "Node " << p->getLabel() << " has possible images { ";
+//					for (auto a : nextImages) {
+//						cout << eventSymbol[a.second] << a.first->getLabel() << " ";
+//					}
+//					cout << "};" << endl;
+//				);
+//				for (auto a : nextImages) {
+//					Node* nuHost = a.first;
+//					eventType nuEvent = a.second;
+//					if (nuHost == M->getHost(p) && nuEvent == M->getEvent(p)) {
+//						double relativeSamplingProbability = exp(-CSD(currentEventCount) / (1.0*T));
+////						cerr << t << ',' << T << ',' << p << ',' << CSD(currentEventCount) << endl;
+//						Contender noChange( currentEventCount, CSD(currentEventCount), p, nuHost, nuEvent, M );
+////						Contender noChange( currentEventCount, relativeSamplingProbability, p, nuHost, nuEvent, M );
+////						DEBUG(cout << "XXX entering CSD for no move: " << CSD(currentEventCount) << endl);
+//						minScore = min(minScore, CSD(currentEventCount));
+//
+//						noChange._noMove = true;
+//						noChange.setLabel("leaving " + p->getLabel() + " on [" + eventSymbol[nuEvent] + "]" + nuHost->getLabel());
+//
+//						neighbours.insert(noChange);
+//						++nullMoves;
+//						continue;
+//					}
+//					ec.clear();
+//					Node* oldHost = M->getHost(p);
+//					eventType oldEvent = M->getEvent(p);
+//					// Get cost of move, without recalculating everything:
+//
+//					// Any change in the number of codivergences?
+//					DEBUG(cout << "p=" << p->getLabel() << "; oldHost=" << oldHost->getLabel()
+//							<< "; newHost=" << a.first->getLabel() << endl);
+//					ec.codivs = (nuEvent == codivergence) ? 1 : 0;
+//					ec.codivs -= (oldEvent == codivergence) ? 1 : 0;
+//
+//					// Any change in number of losses?
+//					int lossFactor = (p->hasParent()) ? 1 : 2;	// root of gene tree has no ancestral branch!
+//					if (oldHost->isAncestralTo(nuHost)) {
+//						DEBUG(cout << "old host is ancestral to new host" << endl);
+//						ec.losses = -lossFactor*(nuHost->getTree()->getDistUp(nuHost, oldHost));
+////						if (p->hasParent()) {
+////							ec.losses = -(nuHost->getTree()->getDistUp(nuHost, oldHost));
+////						} else {
+////							ec.losses = -2*(nuHost->getTree()->getDistUp(nuHost, oldHost));
+////						}
+//					} else if (nuHost->isAncestralTo(oldHost)) {
+//						DEBUG(cout << "new host is ancestral to old host" << endl);
+//						ec.losses = lossFactor*(nuHost->getTree()->getDistUp(oldHost, nuHost));
+////						if (p->hasParent()) {
+////							ec.losses = oldHost->getTree()->getDistUp(oldHost, nuHost);
+////						} else {
+////							ec.losses = 2*oldHost->getTree()->getDistUp(oldHost, nuHost);
+////						}
+//					} else {
+//						DEBUG(cout << "old and new hosts are not ancestrally comparable" << endl);
+//					}
+//					if (oldEvent == duplication && nuEvent == codivergence) {
+//						ec.losses -= 2;
+//					} else if (nuEvent == duplication && oldEvent == codivergence) {
+//						ec.losses += 2;
+//					}
+//
+//					// Any change in number of duplications?
+//					int oldJointDupHeightHere(CMM.calcCombinedDuplicationHeight(oldHost));
+//					int oldJointDupHeightThere(CMM.calcCombinedDuplicationHeight(nuHost));
+//
+//
+//					DEBUG(cout << "oldJointDupHeightHere = " << oldJointDupHeightHere << endl);
+//					DEBUG(cout << "oldJointDupHeightThere = " << oldJointDupHeightThere << endl);
+//					M->moveToHost(p, nuHost, nuEvent);
+//					CMM.movePToHost(p,oldHost,nuHost);	// XXX are both these function calls necessary?
+//					int nuJointDupHeightHere(CMM.calcCombinedDuplicationHeight(oldHost));
+//					int nuJointDupHeightThere(CMM.calcCombinedDuplicationHeight(nuHost));
+//					DEBUG(cout << "nuJointDupHeightHere = " << nuJointDupHeightHere << endl);
+//					DEBUG(cout << "nuJointDupHeightThere = " << nuJointDupHeightThere << endl);
+//					M->moveToHost(p, oldHost, oldEvent);
+//					CMM.movePToHost(p, nuHost, oldHost);	// XXX are both these function calls necessary?
+//					// return p to its old place
+////					DEBUG(
+////							cout << "currentJointDupHeightHere = " << currentJointDupHeightHere << endl;
+////							cout << "currentJointDupHeightThere = " << currentJointDupHeightThere << endl;
+////							cout << "nuJointDupHeightHere = " << nuJointDupHeightHere << endl;
+////							cout << "nuJointDupHeightThere = " << nuJointDupHeightThere << endl;
+////							);
+//					ec.dups = nuJointDupHeightThere - oldJointDupHeightThere;
+//					if (nuHost != oldHost) {
+//						ec.dups += nuJointDupHeightHere - oldJointDupHeightHere;
+//					}
+////					int oldHostDuplicationHeight(M->calcDuplicationHeight(p)); // the dup height of this p on its original host
+////					int destinationDuplicationHeight(CMM.calcCombinedDuplicationHeight(nuHost));	// the current JOINT dup height on the destination
+////					M->moveToHost(p, nuHost, nuEvent);
+////					// also need new JOINT dup heights
+////					// TODO think of a nice way that I don't have to move p twice..
+////					int dupHeightOfPOnNewHost = M->calcDuplicationHeight(p);
+////					ec.dups = 0;
+////					if (dupHeightOfPOnNewHost > destinationDuplicationHeight) {
+////						ec.dups = 1;	// one more duplication required (can only go up by one)
+////					}
+////					int remainingHostDupHeightOnOldHost(CMM.calcCombinedDuplicationHeight(oldHost));
+////					if (oldHostDuplicationHeight > remainingHostDupHeightOnOldHost) {
+////						ec.dups -= 1;	// dup height on original host/species was due to this parasite/gene
+////					}
+//
+//					// Store this contender and its eventcount:
+////					DEBUG(
+////					);
+//					EventCount dec(ec);
+//					ec += currentEventCount;
+//					if (ec.dups < 0) {
+//						cout << "step " << t << ": CRITICAL FAILURE!" << endl;
+//						cout << "previous event count = " << currentEventCount << endl;
+//						cout << "delta ec = " << dec << ";\t";
+//						cout << "ec+originalEventCount = " << ec << ";\t";
+//						exit(-1);
+//					}
+//					Association ass(p, nuHost, nuEvent);
+////					double relativeSamplingProbability = exp(-CSD(ec) / (1.0*T));	// XXX test just using dec not ec here
+//					minScore = min(minScore, CSD(ec));
+////					DEBUG(
+////							cout << "SCORE = " << relativeSamplingProbability << endl;
+////					);
+////					Contender con( ec, relativeSamplingProbability, p, nuHost, nuEvent, M );
+//					Contender con( ec, CSD(ec), p, nuHost, nuEvent, M );
+////					DEBUG(cout << "XXX setting contender score to " << CSD(ec) << endl);
+//					if (con.getEventCount().dups < 0) {
+//						cout << "step " << t << ": CRITICAL FAILURE!" << endl;
+//						cout << "Contender event count = " << con.getEventCount().dups << endl;
+//						exit(-1);
+//					}
+//					string label = "moving " + p->getLabel() + " to [" + eventSymbol[nuEvent] + "]" + nuHost->getLabel();
+//					con.setLabel(label);
+//					neighbours.insert(con);
+////					cerr << t << ',' << T << ',' << p << ',' << con.getScore() << endl;
+//#ifdef ChooseByNode
+//#else
+//				}
+//			}
+//#endif
+//		}
+//		double d;
+//		_debugging = true;
+//		double total(0.0);
+//		set<Contender> adjustedNeighbours;
+//		for (auto nei : neighbours) {
+//			d = nei.getScore() - minScore; // XXX This is a fudge...
+////			cerr << "d=" << d << endl;
+//			DEBUG(cout << "relative CSD for this contender = " << d << endl);
+//			nei.setScore(exp(-d / (1.0*T)));
+//			total += nei.getScore();
+//			adjustedNeighbours.insert(nei);
+//			DEBUG(cout << "T = " << T << "; new score = " << nei.getScore() << endl);
+//			DEBUG(cout << "new total " << total << endl);
+//		}
+////		for (auto nei : neighbours) {
+////		}
+//		numNeighbours += neighbours.size();
+//		DEBUG(cout << "total before dran() = " << total << endl);
+//		double r = dran(total);
+//		DEBUG(cout << "total after dran() = " << total << endl);
+//		/***********************************
+//		 * Now the sampling!
+//		 ***********************************/
+//		DEBUG(cout << "initial r = " << r << " from U[0, " << total << "]" << endl);
+//		for (auto nei : adjustedNeighbours) {
+//			if (r <= nei.getScore()) {
+//				DEBUG(cout << "r=" << r << "; score=" << nei.getScore() << endl);
+//				if (nei._noMove) {
+//					DEBUG(cout << "Selected move: No change (probability = " << (nei.getScore()/total) << ")" << endl);
+//				} else {
+//					// sample this one
+//					DEBUG(cout << "Selected move: " << nei.getLabel() << " (rel. probability = " << nei.getScore() << ")" << endl);
+//					nei.getMap()->moveToHost(nei.getParasite(), nei.getHost(), nei.getEvent());
+//					DEBUG(nei.getMap()->checkValidHostOrdering());
+//				}
+//				if (_showSampledDistribution) {
+//					CMM.toCompactString(mapDescription);
+//#define UseLongMapDescription
+//#ifdef UseLongMapDescription
+//					EventCount totalEC = CMM.countEvents();
+//					mapDescription += "-D" + to_string(totalEC.dups) + "L" + to_string(totalEC.losses);
+//#else
+//					mapDescription += "-D" + to_string(nei.getEventCount().dups)
+//							+ "L" + to_string(nei.getEventCount().losses);
+//#endif
+//					sampledDistribution[mapDescription] += 1;
+//				}
+//				if (_cacheEventCounts) {
+//					CMM.toCompactString(mapDescription);
+//					sampledDistribution[mapDescription] += 1;
+//					ec = CMM.getEventCount(mapDescription);
+//				} else {
+//					ec = nei.getEventCount();
+//				}
+//				DEBUG(cout << "Retrieving event count from neighbour: " << ec << endl);
+//				DEBUG(cout << CMM);
+////				currentEventCount = ec;
+//				currentEventCount = CMM.countEvents();
+//				double cost = CSD(ec);
+//				if (cost < bestCost) {
+//					bestCost = cost;
+//					DEBUG(cout << "Best cost = " << bestCost << endl);
+//					bestEventCount = ec;
+//					DEBUG(if (bestCost < 0) {
+//						cout << "step " << t << ": best cost is NEGATIVE!" << endl;
+//						cout << "\tbest cost = " << bestCost << endl;
+//						cout << "\tbest event count = " << ec << endl;
+//						bestPrettyMap.str("");
+//						bestPrettyMap << CMM;
+//						exit(-1);
+//					});
+//					bestMMap = mapDescription;
+//					bestPrettyMap.str("");
+//					bestPrettyMap << CMM;
+//					DEBUG(
+//							cout << CMM << endl;
+//					);
+//					break;
+//				}
+//				if (_saveTrace) {
+//					++sampleNumber;
+////					ftrace << sampleNumber << ",\"" << mapDescription << "\"," << to_string(CSD(ec)) << endl;
+//					ftrace << sampleNumber << ',' << ec.codivs << ',' << ec.dups << ','
+//							<< ec.losses << ',' << to_string(CSD(ec)) << ','
+//							<< nei.getScore()
+//							<< endl;
+//				}
+//				DEBUG(cout << nei.getLabel() << '\t' << nei.getScore() << endl);
+//				break;
+//			}
+//			DEBUG(cout << r << ' ');
+//			r -= nei.getScore();
+//		}
+//		DEBUG(cout << endl);
+//		// XXX
+//	}
+//	cout << endl;
+//	if (_showSampledDistribution) {
+//		ofstream fout("segdup-samples.csv");
+//		fout << hline << "Sampled Distribution of Solutions:" << endl
+//				<< "Map-Events\tSamples" << endl;
+//		for (auto dis : sampledDistribution) {
+//			fout << dis.first << "\t" << dis.second << endl;
+//		}
+//		fout.close();
+////		cout << hline << "Sampled Distribution of Solutions:" << endl
+////				<< "Map-Events\tSamples" << endl;
+////		for (auto dis : sampledDistribution) {
+////			cout << dis.first << "\t" << dis.second << endl;
+////		}
+//	}
+////	cout << "FINAL Multiple CophyMap found by Algorithm 1:" << endl;
+////	EventCount ecFinal(CMM.countEvents());
+////	cout << CMM << ecFinal << endl << hline << endl;
+////	cout << "final CSD: " << CSD(ecFinal) << endl;
+//	cout << hline << "BEST Multiple CophyMap found by Algorithm 1:" << endl;
+//	cout << bestMMap << '\t' << endl;
+//	cout << bestEventCount << '\t' << bestCost << endl;
+////	cout << bestPrettyMap.str();
+//	cout << hline << endl;
+//	if (_saveTrace) {
+//		ftrace.close();
+//	}
+//	summaryfile << bestEventCount.codivs << ',' << bestEventCount.dups << ',' << bestEventCount.losses << ',' << bestCost << endl;
+//}
+
+void SelectNextConfiguration(CophyMultiMap& CMM, double T, vector<DupMove*>& moves, vector<double> probs) {
+	// select which move type is to be used at random
+	// for selected move type, boltzman sampling to get instance of move
+	// perform the instance on CMM
+	DupMove& move = *moves[0];
+	move.apply(CMM, T);
+}
+
+void Algorithm2(CophyMultiMap& CMM, vector<DupMove*> moves, vector<double> probs, map<string, int>* sampledDistribution = nullptr) {
 	bool _debugging(true);
 	DEBUG(cout << hline << "Algorithm1" << endl << hline);
 	DEBUG(cout << "Input multi-map:" << endl << CMM);
 	CMM.doPageReconciliation();
 	DEBUG(cout << "Initial reconciliation complete:" << endl << CMM);
 
-	CophyMultiMap nuMM(CMM);
-
-	vector<pair<Node*,CophyMap*>> allMoveableNodes;
-	map<CophyMap*, set<Node*>> iV;	// internal vertices of each parasite / gene tree
-	for (auto mpr : CMM.getMaps()) {
-		CophyMap* M = mpr.second;
-		Tree* G = M->getParasiteTree();
-		G->putInternalVertices(iV[M]);
-		G->gatherVertices();
-		for (auto v : G->getVertices()) {
-			if (!v.second->isLeaf()) {
-				allMoveableNodes.push_back(pair<Node*, CophyMap*>(v.second, M));
-			}
-		}
-	}
+	CMM.putAllMoveableNodes();
 
 	double T(0.0);
-	std::set<Contender> neighbours;
-	string mapDescription;
-	CMM.toCompactString(mapDescription);
-//	cout << "ORIGINAL MAP:" << endl << CMM << "Events\tScore\tMap\n" << ecoriginal << '\t' << CSD(ecoriginal) << '\t' << mapDescription << endl;
-	string bestMMap;
-	EventCount bestEventCount;
-	double bestCost(1e100);	// 10^100 should be enough!!
 	ofstream ftrace;
 	int sampleNumber(0);
 	if (_saveTrace) {
@@ -361,286 +672,16 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 	}
 	ostringstream bestPrettyMap;
 	unsigned int numNeighbours(0);
-	EventCount currentEventCount = CMM.countEvents();
+	CMM.countEvents();
 
-	/**
-	 * Choose a node p at uniform random from all internal nodes of all gene trees.
-	 * Collect all nodes from all maps into one big array
-	 * Given p, calculate all potential new locations and note "no change" option too
-	 * Sample from that set according to the relative scores
-	 */
 	double minScore(0.0);
 	for (int t(1); t <= nSteps; ++t) {
 		minScore = 1e10;	// start with a large number
-		if (t % 10 == 0) {
-			advance_cursor();
-		}
-		if (t % 100 == 0) {
-			update_message(" steps = " + to_string(t) + "/" + to_string(nSteps)
-					+ "; log score = "
-					+ to_string(-CSD(currentEventCount) / (1.0*T)) + "; ec = "
-					+ to_string(currentEventCount.codivs) + "C + "
-					+ to_string(currentEventCount.dups) + "D + "
-					+ to_string(currentEventCount.losses) + "L; cost = "
-					+ to_string(CSD(currentEventCount))
-					+ "; best cost = " + to_string(bestCost));
-			DEBUG(cout << endl << CMM);
-//			break;
-		}
 		int nullMoves(0);
 		EventCount ec;
 		T = (Tinitial-Tfinal)*(1.0 - (1.0 * (t-1.0) / nSteps)) + Tfinal;
-//		double x = 1.0 * t / nSteps;
-//		T = Tinitial*1.5/(1.0 + 0.2 * sqrt(x*x*t+1.0));	// function 4 / sqrts	// XXX looks good on ybc-case3 and on Guido et al..
-		neighbours.clear();
-		numNeighbours = 0;
-		DEBUG(
-			cout << hline << "currentEventCount = " << currentEventCount << endl << hline;
-		);
-#define ChooseByNode
-#ifdef ChooseByNode
-		auto mpr = allMoveableNodes[iran(allMoveableNodes.size())];	// pick at random from allMoveableNodes
-		Node* p(mpr.first);
-		CophyMap *M = mpr.second;
-#else
-		for (auto mpr : CMM.getMaps()) {	// get all maps of the gene trees into single species tree
-			CophyMap* M = mpr.second;
-			for (Node* p : iV[M]) {
-#endif
-				set<pair<Node*, eventType>> nextImages = M->calcAvailableNewHosts(p);
-				DEBUG(
-					cout << "Node " << p->getLabel() << " has possible images { ";
-					for (auto a : nextImages) {
-						cout << eventSymbol[a.second] << a.first->getLabel() << " ";
-					}
-					cout << "};" << endl;
-				);
-				for (auto a : nextImages) {
-					Node* nuHost = a.first;
-					eventType nuEvent = a.second;
-					if (nuHost == M->getHost(p) && nuEvent == M->getEvent(p)) {
-						double relativeSamplingProbability = exp(-CSD(currentEventCount) / (1.0*T));
-//						cerr << t << ',' << T << ',' << p << ',' << CSD(currentEventCount) << endl;
-						Contender noChange( currentEventCount, CSD(currentEventCount), p, nuHost, nuEvent, M );
-//						Contender noChange( currentEventCount, relativeSamplingProbability, p, nuHost, nuEvent, M );
-//						DEBUG(cout << "XXX entering CSD for no move: " << CSD(currentEventCount) << endl);
-						minScore = min(minScore, CSD(currentEventCount));
 
-						noChange._noMove = true;
-						noChange.setLabel("leaving " + p->getLabel() + " on [" + eventSymbol[nuEvent] + "]" + nuHost->getLabel());
-
-						neighbours.insert(noChange);
-						++nullMoves;
-						continue;
-					}
-					ec.clear();
-					Node* oldHost = M->getHost(p);
-					eventType oldEvent = M->getEvent(p);
-					// Get cost of move, without recalculating everything:
-
-					// Any change in the number of codivergences?
-					DEBUG(cout << "p=" << p->getLabel() << "; oldHost=" << oldHost->getLabel()
-							<< "; newHost=" << a.first->getLabel() << endl);
-					ec.codivs = (nuEvent == codivergence) ? 1 : 0;
-					ec.codivs -= (oldEvent == codivergence) ? 1 : 0;
-
-					// Any change in number of losses?
-					int lossFactor = (p->hasParent()) ? 1 : 2;	// root of gene tree has no ancestral branch!
-					if (oldHost->isAncestralTo(nuHost)) {
-						DEBUG(cout << "old host is ancestral to new host" << endl);
-						ec.losses = -lossFactor*(nuHost->getTree()->getDistUp(nuHost, oldHost));
-//						if (p->hasParent()) {
-//							ec.losses = -(nuHost->getTree()->getDistUp(nuHost, oldHost));
-//						} else {
-//							ec.losses = -2*(nuHost->getTree()->getDistUp(nuHost, oldHost));
-//						}
-					} else if (nuHost->isAncestralTo(oldHost)) {
-						DEBUG(cout << "new host is ancestral to old host" << endl);
-						ec.losses = lossFactor*(nuHost->getTree()->getDistUp(oldHost, nuHost));
-//						if (p->hasParent()) {
-//							ec.losses = oldHost->getTree()->getDistUp(oldHost, nuHost);
-//						} else {
-//							ec.losses = 2*oldHost->getTree()->getDistUp(oldHost, nuHost);
-//						}
-					} else {
-						DEBUG(cout << "old and new hosts are not ancestrally comparable" << endl);
-					}
-					if (oldEvent == duplication && nuEvent == codivergence) {
-						ec.losses -= 2;
-					} else if (nuEvent == duplication && oldEvent == codivergence) {
-						ec.losses += 2;
-					}
-
-					// Any change in number of duplications?
-					int oldJointDupHeightHere(CMM.calcCombinedDuplicationHeight(oldHost));
-					int oldJointDupHeightThere(CMM.calcCombinedDuplicationHeight(nuHost));
-					DEBUG(cout << "oldJointDupHeightHere = " << oldJointDupHeightHere << endl);
-					DEBUG(cout << "oldJointDupHeightThere = " << oldJointDupHeightThere << endl);
-					M->moveToHost(p, nuHost, nuEvent);
-					CMM.movePToHost(p,oldHost,nuHost);	// XXX are both these function calls necessary?
-					int nuJointDupHeightHere(CMM.calcCombinedDuplicationHeight(oldHost));
-					int nuJointDupHeightThere(CMM.calcCombinedDuplicationHeight(nuHost));
-					DEBUG(cout << "nuJointDupHeightHere = " << nuJointDupHeightHere << endl);
-					DEBUG(cout << "nuJointDupHeightThere = " << nuJointDupHeightThere << endl);
-					M->moveToHost(p, oldHost, oldEvent);
-					CMM.movePToHost(p, nuHost, oldHost);	// XXX are both these function calls necessary?
-					// return p to its old place
-//					DEBUG(
-//							cout << "currentJointDupHeightHere = " << currentJointDupHeightHere << endl;
-//							cout << "currentJointDupHeightThere = " << currentJointDupHeightThere << endl;
-//							cout << "nuJointDupHeightHere = " << nuJointDupHeightHere << endl;
-//							cout << "nuJointDupHeightThere = " << nuJointDupHeightThere << endl;
-//							);
-					ec.dups = nuJointDupHeightThere - oldJointDupHeightThere;
-					if (nuHost != oldHost) {
-						ec.dups += nuJointDupHeightHere - oldJointDupHeightHere;
-					}
-//					int oldHostDuplicationHeight(M->calcDuplicationHeight(p)); // the dup height of this p on its original host
-//					int destinationDuplicationHeight(CMM.calcCombinedDuplicationHeight(nuHost));	// the current JOINT dup height on the destination
-//					M->moveToHost(p, nuHost, nuEvent);
-//					// also need new JOINT dup heights
-//					// TODO think of a nice way that I don't have to move p twice..
-//					int dupHeightOfPOnNewHost = M->calcDuplicationHeight(p);
-//					ec.dups = 0;
-//					if (dupHeightOfPOnNewHost > destinationDuplicationHeight) {
-//						ec.dups = 1;	// one more duplication required (can only go up by one)
-//					}
-//					int remainingHostDupHeightOnOldHost(CMM.calcCombinedDuplicationHeight(oldHost));
-//					if (oldHostDuplicationHeight > remainingHostDupHeightOnOldHost) {
-//						ec.dups -= 1;	// dup height on original host/species was due to this parasite/gene
-//					}
-
-					// Store this contender and its eventcount:
-//					DEBUG(
-//					);
-					EventCount dec(ec);
-					ec += currentEventCount;
-					if (ec.dups < 0) {
-						cout << "step " << t << ": CRITICAL FAILURE!" << endl;
-						cout << "previous event count = " << currentEventCount << endl;
-						cout << "delta ec = " << dec << ";\t";
-						cout << "ec+originalEventCount = " << ec << ";\t";
-						exit(-1);
-					}
-					Association ass(p, nuHost, nuEvent);
-//					double relativeSamplingProbability = exp(-CSD(ec) / (1.0*T));	// XXX test just using dec not ec here
-					minScore = min(minScore, CSD(ec));
-//					DEBUG(
-//							cout << "SCORE = " << relativeSamplingProbability << endl;
-//					);
-//					Contender con( ec, relativeSamplingProbability, p, nuHost, nuEvent, M );
-					Contender con( ec, CSD(ec), p, nuHost, nuEvent, M );
-//					DEBUG(cout << "XXX setting contender score to " << CSD(ec) << endl);
-					if (con.getEventCount().dups < 0) {
-						cout << "step " << t << ": CRITICAL FAILURE!" << endl;
-						cout << "Contender event count = " << con.getEventCount().dups << endl;
-						exit(-1);
-					}
-					string label = "moving " + p->getLabel() + " to [" + eventSymbol[nuEvent] + "]" + nuHost->getLabel();
-					con.setLabel(label);
-					neighbours.insert(con);
-//					cerr << t << ',' << T << ',' << p << ',' << con.getScore() << endl;
-#ifdef ChooseByNode
-#else
-				}
-			}
-#endif
-		}
-		double d;
-		_debugging = true;
-		double total(0.0);
-		set<Contender> adjustedNeighbours;
-		for (auto nei : neighbours) {
-			d = nei.getScore() - minScore; // XXX This is a fudge...
-//			cerr << "d=" << d << endl;
-			DEBUG(cout << "relative CSD for this contender = " << d << endl);
-			nei.setScore(exp(-d / (1.0*T)));
-			total += nei.getScore();
-			adjustedNeighbours.insert(nei);
-			DEBUG(cout << "T = " << T << "; new score = " << nei.getScore() << endl);
-			DEBUG(cout << "new total " << total << endl);
-		}
-//		for (auto nei : neighbours) {
-//		}
-		numNeighbours += neighbours.size();
-		DEBUG(cout << "total before dran() = " << total << endl);
-		double r = dran(total);
-		DEBUG(cout << "total after dran() = " << total << endl);
-		/***********************************
-		 * Now the sampling!
-		 ***********************************/
-		DEBUG(cout << "initial r = " << r << " from U[0, " << total << "]" << endl);
-		for (auto nei : adjustedNeighbours) {
-			if (r <= nei.getScore()) {
-				DEBUG(cout << "r=" << r << "; score=" << nei.getScore() << endl);
-				if (nei._noMove) {
-					DEBUG(cout << "Selected move: No change (probability = " << (nei.getScore()/total) << ")" << endl);
-				} else {
-					// sample this one
-					DEBUG(cout << "Selected move: " << nei.getLabel() << " (rel. probability = " << nei.getScore() << ")" << endl);
-					nei.getMap()->moveToHost(nei.getParasite(), nei.getHost(), nei.getEvent());
-					DEBUG(nei.getMap()->checkValidHostOrdering());
-				}
-				if (_showSampledDistribution) {
-					CMM.toCompactString(mapDescription);
-#define UseLongMapDescription
-#ifdef UseLongMapDescription
-					EventCount totalEC = CMM.countEvents();
-					mapDescription += "-D" + to_string(totalEC.dups) + "L" + to_string(totalEC.losses);
-#else
-					mapDescription += "-D" + to_string(nei.getEventCount().dups)
-							+ "L" + to_string(nei.getEventCount().losses);
-#endif		
-					sampledDistribution[mapDescription] += 1;
-				}
-				if (_cacheEventCounts) {
-					CMM.toCompactString(mapDescription);
-					sampledDistribution[mapDescription] += 1;
-					ec = CMM.getEventCount(mapDescription);
-				} else {
-					ec = nei.getEventCount();
-				}
-				DEBUG(cout << "Retrieving event count from neighbour: " << ec << endl);
-				DEBUG(cout << CMM);
-//				currentEventCount = ec;
-				currentEventCount = CMM.countEvents();
-				double cost = CSD(ec);
-				if (cost < bestCost) {
-					bestCost = cost;
-					DEBUG(cout << "Best cost = " << bestCost << endl);
-					bestEventCount = ec;
-					DEBUG(if (bestCost < 0) {
-						cout << "step " << t << ": best cost is NEGATIVE!" << endl;
-						cout << "\tbest cost = " << bestCost << endl;
-						cout << "\tbest event count = " << ec << endl;
-						bestPrettyMap.str("");
-						bestPrettyMap << CMM;
-						exit(-1);
-					});
-					bestMMap = mapDescription;
-					bestPrettyMap.str("");
-					bestPrettyMap << CMM;
-					DEBUG(
-							cout << CMM << endl;
-					);
-					break;
-				}
-				if (_saveTrace) {
-					++sampleNumber;
-//					ftrace << sampleNumber << ",\"" << mapDescription << "\"," << to_string(CSD(ec)) << endl;
-					ftrace << sampleNumber << ',' << ec.codivs << ',' << ec.dups << ','
-							<< ec.losses << ',' << to_string(CSD(ec)) << ','
-							<< nei.getScore()
-							<< endl;
-				}
-				DEBUG(cout << nei.getLabel() << '\t' << nei.getScore() << endl);
-				break;
-			}
-			DEBUG(cout << r << ' ');
-			r -= nei.getScore();
-		}
-		DEBUG(cout << endl);
-		// XXX
+		SelectNextConfiguration(CMM, T, moves, probs);	// modifies CMM
 	}
 	cout << endl;
 	if (_showSampledDistribution) {
@@ -651,20 +692,10 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 			fout << dis.first << "\t" << dis.second << endl;
 		}
 		fout.close();
-//		cout << hline << "Sampled Distribution of Solutions:" << endl
-//				<< "Map-Events\tSamples" << endl;
-//		for (auto dis : sampledDistribution) {
-//			cout << dis.first << "\t" << dis.second << endl;
-//		}
 	}
-//	cout << "FINAL Multiple CophyMap found by Algorithm 1:" << endl;
-//	EventCount ecFinal(CMM.countEvents());
-//	cout << CMM << ecFinal << endl << hline << endl;
-//	cout << "final CSD: " << CSD(ecFinal) << endl;
 	cout << hline << "BEST Multiple CophyMap found by Algorithm 1:" << endl;
 	cout << bestMMap << '\t' << endl;
 	cout << bestEventCount << '\t' << bestCost << endl;
-//	cout << bestPrettyMap.str();
 	cout << hline << endl;
 	if (_saveTrace) {
 		ftrace.close();
@@ -924,8 +955,11 @@ void doAlgorithmTest() {
 	G2.setShowInfo(true);
 	CMM.addCophyMap(&M1);
 	CMM.addCophyMap(&M2);
-	map<string, int> sampledDistribution;
-	Algorithm1(CMM, sampledDistribution);
+	vector<DupMove*> moves;
+	moves.push_back(new SingleNodeMove());
+	vector<double> probs;
+	probs.push_back(1.0);
+	Algorithm2(CMM, moves, probs);
 }
 
 void doAlgorithmTest2() {
@@ -957,8 +991,11 @@ void doAlgorithmTest2() {
 	CMM.addCophyMap(&M3);
 	lossCost = 0.1;
 	duplicationCost = 1.0;
-	map<string, int> sampledDistribution;
-	Algorithm1(CMM, sampledDistribution);
+	vector<DupMove*> moves;
+	moves.push_back(new SingleNodeMove());
+	vector<double> probs;
+	probs.push_back(1.0);
+	Algorithm2(CMM, moves, probs);
 }
 
 void doAlgorithmTest3() {
@@ -976,8 +1013,11 @@ void doAlgorithmTest3() {
 	cout << CMM;
 	lossCost = 0.1;
 	duplicationCost = 1.0;
-	map<string, int> sampledDistribution;
-	Algorithm1(CMM, sampledDistribution);
+	vector<DupMove*> moves;
+	moves.push_back(new SingleNodeMove());
+	vector<double> probs;
+	probs.push_back(1.0);
+	Algorithm2(CMM, moves, probs);
 }
 
 void doContenderTest() {
@@ -1118,7 +1158,16 @@ int main(int argn, char** argv) {
 	cout << hline;
 	CMM.doPageReconciliation();
 	map<string, int> sampledDistribution;
-	Algorithm1(CMM, sampledDistribution);
+//	Algorithm1(CMM, sampledDistribution);
+	std::vector<DupMove*> moves;
+	moves.push_back(new SingleNodeMove);
+	moves.push_back(new SingleNodeMove);
+	std::vector<double> probs;
+	probs.push_back(0.75);
+	probs.push_back(0.25);
+	Algorithm2(CMM, moves, probs, &sampledDistribution);
+
+
 //	bool _debugging(true);
 
 //	testPageReconciliation2();
