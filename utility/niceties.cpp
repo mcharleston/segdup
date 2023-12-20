@@ -20,6 +20,6 @@ void update_message(std::string str) {
 	for (unsigned int i(0); i < lastMessageLength; ++i) {
 		printf("\b");
 	}
-	printf(str.c_str());
+//	printf(str.c_str());
 	lastMessageLength = str.length();
 }

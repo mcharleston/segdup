@@ -23,7 +23,7 @@
 
 #include "../utility/debugging.h"
 #include "../utility/myrandom.h"
-#include "../utility/niceties.h"
+//#include "../utility/niceties.h"
 
 #include "Contender.h"
 #include "CophyMap.h"
@@ -59,12 +59,16 @@ std::ofstream summaryfile;
 
 double lossCost(defLossCost);			// XXX
 double duplicationCost(defDuplicationCost);	// XXX MAGIC number!
+									//
+namespace segdup {
 
-double CSD(const EventCount& ec) {
-	double cost(0.0);
-	cost += ec.dups * duplicationCost;
-	cost += ec.losses * lossCost;
-	return cost;
+	double CSD(const EventCount& ec) {
+		double cost(0.0);
+		cost += ec.dups * duplicationCost;
+		cost += ec.losses * lossCost;
+		return cost;
+	}
+
 }
 
 string hline("============================================================================\n");
@@ -648,13 +652,18 @@ void testDuplicationHeight() {
 
 void SelectNextConfiguration(CophyMultiMap& CMM, double T, vector<DupMove*>& moves, vector<double> probs) {
 	// select which move type is to be used at random
-	// for selected move type, boltzman sampling to get instance of move
+	// for selected move type, Boltzmann sampling to get instance of move
 	// perform the instance on CMM
-	DupMove& move = *moves[0];
+	DupMove& move = *(moves[0]);
 	move.apply(CMM, T);
 }
 
 void Algorithm2(CophyMultiMap& CMM, vector<DupMove*> moves, vector<double> probs, map<string, int>* sampledDistribution = nullptr) {
+	string bestMMap;
+	EventCount bestEventCount;
+	double bestCost(1e100);	// 10^100 should be enough!!
+	string mapDescription;				
+
 	bool _debugging(true);
 	DEBUG(cout << hline << "Algorithm1" << endl << hline);
 	DEBUG(cout << "Input multi-map:" << endl << CMM);
@@ -671,24 +680,60 @@ void Algorithm2(CophyMultiMap& CMM, vector<DupMove*> moves, vector<double> probs
 		ftrace << "i,c,d,l,s,pr" << endl;
 	}
 	ostringstream bestPrettyMap;
-	unsigned int numNeighbours(0);
-	CMM.countEvents();
+	CMM.calcEventCount();
 
-	double minScore(0.0);
 	for (int t(1); t <= nSteps; ++t) {
-		minScore = 1e10;	// start with a large number
 		int nullMoves(0);
 		EventCount ec;
 		T = (Tinitial-Tfinal)*(1.0 - (1.0 * (t-1.0) / nSteps)) + Tfinal;
 
 		SelectNextConfiguration(CMM, T, moves, probs);	// modifies CMM
+												
+		if (_showSampledDistribution) {
+			CMM.toCompactString(mapDescription);
+			EventCount totalEC = CMM.countEvents();
+			mapDescription += "-D" + to_string(totalEC.dups) + "L" + to_string(totalEC.losses);
+			(*sampledDistribution)[mapDescription] += 1;
+		}
+
+		ec = CMM.countEvents();
+		double cost = CSD(ec);
+		if (cost < bestCost) {
+			bestCost = cost;
+			DEBUG(cout << "Best cost = " << bestCost << endl);
+			bestEventCount = ec;
+			DEBUG(if (bestCost < 0) {
+				cout << "step " << t << ": best cost is NEGATIVE!" << endl;
+				cout << "\tbest cost = " << bestCost << endl;
+				cout << "\tbest event count = " << ec << endl;
+				bestPrettyMap.str("");
+				bestPrettyMap << CMM;
+				exit(-1);
+			});
+			bestMMap = mapDescription;
+			bestPrettyMap.str("");
+			bestPrettyMap << CMM;
+			DEBUG(
+					cout << CMM << endl;
+			);
+		}
+
+		if (_saveTrace) {
+			++sampleNumber;
+//					ftrace << sampleNumber << ",\"" << mapDescription << "\"," << to_string(CSD(ec)) << endl;
+			ftrace << sampleNumber << ',' << ec.codivs << ',' << ec.dups << ','
+					<< ec.losses << ',' << to_string(CSD(ec)) << ','
+//					<< nei.getScore()
+					<< endl;
+		}
+//		DEBUG(cout << nei.getLabel() << '\t' << nei.getScore() << endl);
 	}
 	cout << endl;
 	if (_showSampledDistribution) {
 		ofstream fout("segdup-samples.csv");
 		fout << hline << "Sampled Distribution of Solutions:" << endl
 				<< "Map-Events\tSamples" << endl;
-		for (auto dis : sampledDistribution) {
+		for (auto dis : (*sampledDistribution)) {
 			fout << dis.first << "\t" << dis.second << endl;
 		}
 		fout.close();

@@ -75,7 +75,11 @@ void CophyMultiMap::clear() {
 	lossCost = defLossCost;
 }
 
-void CophyMultiMap::countEvents() {
+void CophyMultiMap::setCurrentEventCount(const EventCount& ec) {
+	currentEventCount = ec;
+}
+
+void CophyMultiMap::calcEventCount() {
 	/**
 	 *
 	 */
@@ -84,7 +88,7 @@ void CophyMultiMap::countEvents() {
 	Node *p, *h;
 	string description;
 	int nLosses;
-	DEBUG(cout << "CophyMultiMap:countEvents()\n");
+	DEBUG(cout << "CophyMultiMap:calcEventCount()\n");
 	DEBUG(cout << *this);
 	DEBUG(cout << "1. Losses:" << endl);
 	for (auto mpr : maps) {
@@ -147,11 +151,11 @@ void CophyMultiMap::countEvents() {
 
 }
 
-EventCount& CophyMultiMap::getEventCount() {
+EventCount& CophyMultiMap::countEvents() {
 	return currentEventCount;
 }
 
-EventCount& CophyMultiMap::getEventCount(const std::string& mapDescription) {
+EventCount& CophyMultiMap::countEvents(const std::string& mapDescription) {
 	return mmEventCounts.at(mapDescription);
 }
 
@@ -192,6 +196,11 @@ void CophyMultiMap::putAllMoveableNodes() {
 		}
 	}
 }
+
+std::vector<std::pair<Node*,CophyMap*>>& CophyMultiMap::getAllMoveableNodes() {
+	return allMoveableNodes;
+}
+
 void CophyMultiMap::toCompactString(string & str) {
 	str = "";
 //	EventCount ec = countEvents();

@@ -34,9 +34,10 @@ public:
 	void calcInverseMap();
 	void clear();
 
-	EventCount& getEventCount(const std::string& mapDescription);
-	EventCount& getEventCount();
-	void countEvents();	// XXX change to count events
+	EventCount& countEvents(const std::string& mapDescription);
+	EventCount& countEvents();
+	void setCurrentEventCount(const EventCount& ec);
+	void calcEventCount();	// XXX change to count events
 	void doPageReconciliation();
 
 //	CophyMap*& operator[](Tree* P) { return maps[P]; }
@@ -48,6 +49,7 @@ public:
 	void movePToHost(Node* p, Node *oldHost, Node *nuHost);
 
 	void putAllMoveableNodes();
+	std::vector<std::pair<Node*,CophyMap*>>& getAllMoveableNodes();
 	inline void setDuplicationCost(double d) { duplicationCost = d; }
 	inline void storeEventCount(const std::string& label, const EventCount& ec) { mmEventCounts[label] = ec; }
 	inline void setLossCost(double l) { lossCost = l; }

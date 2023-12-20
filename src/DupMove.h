@@ -20,7 +20,7 @@ public:
 	DupMove();
 	virtual ~DupMove();
 
-	virtual void apply(CophyMultiMap& CMM, double T);
+	virtual void apply(CophyMultiMap& CMM, double T) { }
 };
 
 } /* namespace segdup */

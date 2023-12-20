@@ -6,9 +6,10 @@
  */
 
 #include <iostream>
+#include <cmath>
 
-#include "debugging.h"
-#include "myrandom.h"
+#include "../utility/debugging.h"
+#include "../utility/myrandom.h"
 
 #include "Contender.h"
 #include "Node.h"
@@ -29,17 +30,20 @@ SingleNodeMove::~SingleNodeMove() {
 }
 
 void SingleNodeMove::apply(CophyMultiMap& CMM, double T) {
-	bool _debugging(false);
-	int size = CMM.allMoveableNodes.size();
-	auto mpr = CMM.allMoveableNodes[iran(size)];	// pick at random from allMoveableNodes
+	bool _debugging(true);
+	int size = CMM.getAllMoveableNodes().size();
+	auto mpr = (CMM.getAllMoveableNodes())[iran(size)];	// pick at random from allMoveableNodes
 
 	Node* p(mpr.first);
 
 	CophyMap *M = mpr.second;
-	EventCount& currentEventCount = CMM.getEventCount();
+	EventCount& currentEventCount = CMM.countEvents();
 	EventCount ec;
 	unsigned int nullMoves;
 	std::set<Contender> neighbours;
+
+	double minScore(1e10);	
+	unsigned int numNeighbours(0);
 
 	set<pair<Node*, eventType>> nextImages = M->calcAvailableNewHosts(p);
 		DEBUG(
@@ -53,7 +57,7 @@ void SingleNodeMove::apply(CophyMultiMap& CMM, double T) {
 			Node* nuHost = a.first;
 			eventType nuEvent = a.second;
 			if (nuHost == M->getHost(p) && nuEvent == M->getEvent(p)) {
-				double relativeSamplingProbability = std::exp(-CSD(currentEventCount) / (1.0*T));
+				double relativeSamplingProbability = exp(-CSD(currentEventCount) / (1.0*T));
 				Contender noChange( currentEventCount, CSD(currentEventCount), p, nuHost, nuEvent, M );
 //						DEBUG(cout << "XXX entering CSD for no move: " << CSD(currentEventCount) << endl);
 				minScore = std::min(minScore, CSD(currentEventCount));
@@ -115,7 +119,7 @@ void SingleNodeMove::apply(CophyMultiMap& CMM, double T) {
 			EventCount dec(ec);
 			ec += currentEventCount;
 			if (ec.dups < 0) {
-				cout << "step " << t << ": CRITICAL FAILURE!" << endl;
+				cout << "CRITICAL FAILURE!" << endl;
 				cout << "previous event count = " << currentEventCount << endl;
 				cout << "delta ec = " << dec << ";\t";
 				cout << "ec+originalEventCount = " << ec << ";\t";
@@ -130,7 +134,7 @@ void SingleNodeMove::apply(CophyMultiMap& CMM, double T) {
 			Contender con( ec, CSD(ec), p, nuHost, nuEvent, M );
 //					DEBUG(cout << "XXX setting contender score to " << CSD(ec) << endl);
 			if (con.getEventCount().dups < 0) {
-				cout << "step " << t << ": CRITICAL FAILURE!" << endl;
+				cout << "CRITICAL FAILURE!" << endl;
 				cout << "Contender event count = " << con.getEventCount().dups << endl;
 				exit(-1);
 			}
@@ -174,65 +178,16 @@ void SingleNodeMove::apply(CophyMultiMap& CMM, double T) {
 					nei.getMap()->moveToHost(nei.getParasite(), nei.getHost(), nei.getEvent());
 					DEBUG(nei.getMap()->checkValidHostOrdering());
 				}
-				if (_showSampledDistribution) {
-					CMM.toCompactString(mapDescription);
-#define UseLongMapDescription
-#ifdef UseLongMapDescription
-					EventCount totalEC = CMM.countEvents();
-					mapDescription += "-D" + to_string(totalEC.dups) + "L" + to_string(totalEC.losses);
-#else
-					mapDescription += "-D" + to_string(nei.getEventCount().dups)
-							+ "L" + to_string(nei.getEventCount().losses);
-#endif
-					sampledDistribution[mapDescription] += 1;
-				}
-				if (_cacheEventCounts) {
-					CMM.toCompactString(mapDescription);
-					sampledDistribution[mapDescription] += 1;
-					ec = CMM.getEventCount(mapDescription);
-				} else {
-					ec = nei.getEventCount();
-				}
-				DEBUG(cout << "Retrieving event count from neighbour: " << ec << endl);
-				DEBUG(cout << CMM);
-//				currentEventCount = ec;
-				currentEventCount = CMM.countEvents();
-				double cost = CSD(ec);
-				if (cost < bestCost) {
-					bestCost = cost;
-					DEBUG(cout << "Best cost = " << bestCost << endl);
-					bestEventCount = ec;
-					DEBUG(if (bestCost < 0) {
-						cout << "step " << t << ": best cost is NEGATIVE!" << endl;
-						cout << "\tbest cost = " << bestCost << endl;
-						cout << "\tbest event count = " << ec << endl;
-						bestPrettyMap.str("");
-						bestPrettyMap << CMM;
-						exit(-1);
-					});
-					bestMMap = mapDescription;
-					bestPrettyMap.str("");
-					bestPrettyMap << CMM;
-					DEBUG(
-							cout << CMM << endl;
-					);
-					break;
-				}
-				if (_saveTrace) {
-					++sampleNumber;
-//					ftrace << sampleNumber << ",\"" << mapDescription << "\"," << to_string(CSD(ec)) << endl;
-					ftrace << sampleNumber << ',' << ec.codivs << ',' << ec.dups << ','
-							<< ec.losses << ',' << to_string(CSD(ec)) << ','
-							<< nei.getScore()
-							<< endl;
-				}
-				DEBUG(cout << nei.getLabel() << '\t' << nei.getScore() << endl);
+
+				CMM.setCurrentEventCount(nei.getEventCount());
+
 				break;
 			}
 			DEBUG(cout << r << ' ');
 			r -= nei.getScore();
 		}
 		DEBUG(cout << endl);
+
 
 }
 

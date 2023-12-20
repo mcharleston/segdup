@@ -8,6 +8,7 @@
 #ifndef SRC_SINGLENODEMOVE_H_
 #define SRC_SINGLENODEMOVE_H_
 
+#include "SegDup.h"
 #include "DupMove.h"
 #include "CophyMultiMap.h"
 
