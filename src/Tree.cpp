@@ -229,6 +229,14 @@ bool Tree::isAncestralTo(Node* x, Node*y) {
 	return (distUp[std::pair<Node*, Node*>(y, x)] > 0);
 }
 
+Node* Tree::min(Node* u, Node* v) {
+	//ASSUMES u and v are comparable!
+	if (LCA(u,v) == u)
+		return v;
+	else
+		return u;
+}
+
 Node* Tree::LCA(std::set<Node*> V) {
 	Node* lca = *(V.begin());
 	for (Node* v : V) {

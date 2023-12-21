@@ -30,6 +30,7 @@
 #include "CophyMultiMap.h"
 #include "DupMove.h"
 #include "EventCount.h"
+#include "EmptyMove.h"
 #include "Node.h"
 #include "NodeMap.h"
 #include "SingleNodeMove.h"
@@ -654,8 +655,20 @@ void SelectNextConfiguration(CophyMultiMap& CMM, double T, vector<DupMove*>& mov
 	// select which move type is to be used at random
 	// for selected move type, Boltzmann sampling to get instance of move
 	// perform the instance on CMM
-	DupMove& move = *(moves[0]);
-	move.apply(CMM, T);
+	double total(0.0);
+	for (auto p : probs)
+		total += p;
+	double d(dran(total));
+
+	for (int i = 0; i < moves.size(); i++) {
+		if (d < probs[i]) {
+			//select this move
+			moves[i]->apply(CMM, T);
+			
+			break;
+		}
+		d -= probs[i];
+	}
 }
 
 void Algorithm2(CophyMultiMap& CMM, vector<DupMove*> moves, vector<double> probs, map<string, int>* sampledDistribution = nullptr) {
@@ -677,7 +690,7 @@ void Algorithm2(CophyMultiMap& CMM, vector<DupMove*> moves, vector<double> probs
 	int sampleNumber(0);
 	if (_saveTrace) {
 		ftrace.open("segdup-trace.csv", std::ofstream::out);
-		ftrace << "i,c,d,l,s,pr" << endl;
+		ftrace << "i,c,d,l,s,t" << endl;
 	}
 	ostringstream bestPrettyMap;
 	CMM.calcEventCount();
@@ -723,7 +736,7 @@ void Algorithm2(CophyMultiMap& CMM, vector<DupMove*> moves, vector<double> probs
 //					ftrace << sampleNumber << ",\"" << mapDescription << "\"," << to_string(CSD(ec)) << endl;
 			ftrace << sampleNumber << ',' << ec.codivs << ',' << ec.dups << ','
 					<< ec.losses << ',' << to_string(CSD(ec)) << ','
-//					<< nei.getScore()
+					<< T
 					<< endl;
 		}
 //		DEBUG(cout << nei.getLabel() << '\t' << nei.getScore() << endl);
@@ -1206,7 +1219,7 @@ int main(int argn, char** argv) {
 //	Algorithm1(CMM, sampledDistribution);
 	std::vector<DupMove*> moves;
 	moves.push_back(new SingleNodeMove);
-	moves.push_back(new SingleNodeMove);
+	moves.push_back(new EmptyMove);
 	std::vector<double> probs;
 	probs.push_back(0.75);
 	probs.push_back(0.25);

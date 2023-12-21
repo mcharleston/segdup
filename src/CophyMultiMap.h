@@ -32,6 +32,7 @@ public:
 	void addCophyMap(CophyMap* M) { maps[M->getParasiteTree()] = M; }
 	int calcCombinedDuplicationHeight(Node *h);
 	void calcInverseMap();
+	inversenodemap& getInverseMap();
 	void clear();
 
 	EventCount& countEvents(const std::string& mapDescription);
@@ -45,6 +46,8 @@ public:
 //	void toShortDescription(std::string& str);
 
 	std::map<Tree*, CophyMap*>& getMaps() { return maps; }
+	CophyMap* getMap(Node* n) { return maps[n->getTree()]; }
+	Tree* getHostTree();
 
 	void movePToHost(Node* p, Node *oldHost, Node *nuHost);
 

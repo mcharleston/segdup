@@ -64,6 +64,7 @@ public:
 
 	bool isAncestralTo(Node* x, Node* y);
 
+	Node* min(Node* u, Node* v);
 	Node* LCA(std::set<Node*> V);
 	Node* LCA(Node* u, Node* v);
 	Node* LCA(const std::string& ustr, const std::string& vstr);

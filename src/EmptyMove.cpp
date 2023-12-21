@@ -31,164 +31,151 @@ EmptyMove::~EmptyMove() {
 
 void EmptyMove::apply(CophyMultiMap& CMM, double T) {
 	bool _debugging(true);
-	int size = CMM.getAllMoveableNodes().size();
-	auto mpr = (CMM.getAllMoveableNodes())[iran(size)];	// pick at random from allMoveableNodes
 
-	Node* p(mpr.first);
+	DEBUG(cout << "Attempting empty move" << endl;)
+	//find all species tree vertices with >1 duplications mapped to them
 
-	CophyMap *M = mpr.second;
-	EventCount& currentEventCount = CMM.countEvents();
+	Tree* s = CMM.getHostTree();
+	inversenodemap& invMap = CMM.getInverseMap();
+	vector<Node*> fromVertices;
+	for (auto v : s->getVertices()) {
+		int dupsAtV = 0;
+		for (auto n : invMap[v.second]) 
+			if (CMM.getMap(n)->getEvent(n) == duplication)
+				dupsAtV++;
+
+		if (dupsAtV > 1)
+			fromVertices.push_back(v.second);
+	}
+	DEBUG(cout << "fromVertices has size " << fromVertices.size() << endl;)
+
+	if (fromVertices.size() == 0)
+		return;
+	
+	//choose a vertex from fromVertices
+	Node* fromVertex = fromVertices[iran(fromVertices.size())];
+
+	Node* top = s->getRoot();
+	Node* restrict;
+	Node* bottom;
+	set<Node*> childHosts;
+	//find all vertices with which can be images for the duplications
+	for (auto n : invMap[fromVertex]) {
+		if (CMM.getMap(n)->getEvent(n) == duplication) {
+			//if parent of n is not at fromVertex get upper limit
+			if (n->hasParent() && CMM.getMap(n->getParent())->getHost(n->getParent()) != fromVertex) {
+				//cannot go higher than image of parent
+				restrict = CMM.getMap(n->getParent())->getHost(n->getParent()); 
+				//move down 1 if speciation
+				if (CMM.getMap(n->getParent())->getEvent(n->getParent()) != duplication) {
+					Node* temp = fromVertex;
+					while (temp->getParent() != restrict)
+						temp = temp->getParent();
+					restrict = temp;
+				}
+				top = s->min(top, restrict);
+			}
+
+			//if children of n are not at fromVertex get lower limit
+			for (Node* c = n->getFirstChild(); c != nullptr; c = c->getSibling()) {
+				if (CMM.getMap(c)->getHost(c) != fromVertex || CMM.getMap(c)->getEvent(c) != duplication) {
+					childHosts.insert(CMM.getMap(c)->getHost(c));
+				}
+			}
+			
+		}
+	}
+	bottom = s->LCA(childHosts);
+
+	//calculate weights, total
+	int dupsToMove = 0;
+	for (auto n : invMap[fromVertex]) 
+		if (CMM.getMap(n)->getEvent(n) == duplication)
+			dupsToMove++;
+
 	EventCount ec;
-	unsigned int nullMoves;
-	std::set<Contender> neighbours;
+	Node* temp;
+	double total(1.0);
 
-	double minScore(1e10);	
-	unsigned int numNeighbours(0);
-
-	set<pair<Node*, eventType>> nextImages = M->calcAvailableNewHosts(p);
-		DEBUG(
-			cout << "Node " << p->getLabel() << " has possible images { ";
-			for (auto a : nextImages) {
-				cout << eventSymbol[a.second] << a.first->getLabel() << " ";
-			}
-			cout << "};" << endl;
-		);
-		for (auto a : nextImages) {
-			Node* nuHost = a.first;
-			eventType nuEvent = a.second;
-			if (nuHost == M->getHost(p) && nuEvent == M->getEvent(p)) {
-				double relativeSamplingProbability = exp(-CSD(currentEventCount) / (1.0*T));
-				Contender noChange( currentEventCount, CSD(currentEventCount), p, nuHost, nuEvent, M );
-//						DEBUG(cout << "XXX entering CSD for no move: " << CSD(currentEventCount) << endl);
-				minScore = std::min(minScore, CSD(currentEventCount));
-
-				noChange._noMove = true;
-				noChange.setLabel("leaving " + p->getLabel() + " on [" + eventSymbol[nuEvent] + "]" + nuHost->getLabel());
-
-				neighbours.insert(noChange);
-				++nullMoves;
-				continue;
-			}
+	//go from bottom to top INCLUSIVE
+	vector<pair<Node*,double>> toVertices;
+	toVertices.push_back(make_pair(fromVertex,1.0));
+	for (Node* v = bottom; true; v = v->getParent()) {
+		int dupsAtV = 0;
+		for (auto n : invMap[v]) 
+			if (CMM.getMap(n)->getEvent(n) == duplication)
+				dupsAtV++;
+		if (dupsAtV == 0) {
 			ec.clear();
-			Node* oldHost = M->getHost(p);
-			eventType oldEvent = M->getEvent(p);
-			// Get cost of move, without recalculating everything:
+			if (v->isAncestralTo(fromVertex))
+				ec.losses = dupsToMove*s->getDistUp(fromVertex,v);
+			else if (fromVertex->isAncestralTo(v))
+				ec.losses = -dupsToMove*s->getDistUp(v,fromVertex);
 
-			// Any change in the number of codivergences?
-			DEBUG(cout << "p=" << p->getLabel() << "; oldHost=" << oldHost->getLabel()
-					<< "; newHost=" << a.first->getLabel() << endl);
-			ec.codivs = (nuEvent == codivergence) ? 1 : 0;
-			ec.codivs -= (oldEvent == codivergence) ? 1 : 0;
-
-			// Any change in number of losses?
-			int lossFactor = (p->hasParent()) ? 1 : 2;	// root of gene tree has no ancestral branch!
-			if (oldHost->isAncestralTo(nuHost)) {
-				DEBUG(cout << "old host is ancestral to new host" << endl);
-				ec.losses = -lossFactor*(nuHost->getTree()->getDistUp(nuHost, oldHost));
-			} else if (nuHost->isAncestralTo(oldHost)) {
-				DEBUG(cout << "new host is ancestral to old host" << endl);
-				ec.losses = lossFactor*(nuHost->getTree()->getDistUp(oldHost, nuHost));
-			} else {
-				DEBUG(cout << "old and new hosts are not ancestrally comparable" << endl);
-			}
-			if (oldEvent == duplication && nuEvent == codivergence) {
-				ec.losses -= 2;
-			} else if (nuEvent == duplication && oldEvent == codivergence) {
-				ec.losses += 2;
-			}
-
-			// Any change in number of duplications?
-			int oldJointDupHeightHere(CMM.calcCombinedDuplicationHeight(oldHost));
-			int oldJointDupHeightThere(CMM.calcCombinedDuplicationHeight(nuHost));
-
-
-			DEBUG(cout << "oldJointDupHeightHere = " << oldJointDupHeightHere << endl);
-			DEBUG(cout << "oldJointDupHeightThere = " << oldJointDupHeightThere << endl);
-			M->moveToHost(p, nuHost, nuEvent);
-			CMM.movePToHost(p,oldHost,nuHost);	// XXX are both these function calls necessary?
-			int nuJointDupHeightHere(CMM.calcCombinedDuplicationHeight(oldHost));
-			int nuJointDupHeightThere(CMM.calcCombinedDuplicationHeight(nuHost));
-			DEBUG(cout << "nuJointDupHeightHere = " << nuJointDupHeightHere << endl);
-			DEBUG(cout << "nuJointDupHeightThere = " << nuJointDupHeightThere << endl);
-			M->moveToHost(p, oldHost, oldEvent);
-			CMM.movePToHost(p, nuHost, oldHost);	// XXX are both these function calls necessary?
-			ec.dups = nuJointDupHeightThere - oldJointDupHeightThere;
-			if (nuHost != oldHost) {
-				ec.dups += nuJointDupHeightHere - oldJointDupHeightHere;
-			}
-			EventCount dec(ec);
-			ec += currentEventCount;
-			if (ec.dups < 0) {
-				cout << "CRITICAL FAILURE!" << endl;
-				cout << "previous event count = " << currentEventCount << endl;
-				cout << "delta ec = " << dec << ";\t";
-				cout << "ec+originalEventCount = " << ec << ";\t";
-				exit(-1);
-			}
-			Association ass(p, nuHost, nuEvent);
-//					double relativeSamplingProbability = exp(-CSD(ec) / (1.0*T));	// XXX test just using dec not ec here
-			minScore = min(minScore, CSD(ec));
-//					DEBUG(
-//							cout << "SCORE = " << relativeSamplingProbability << endl;
-//					);
-			Contender con( ec, CSD(ec), p, nuHost, nuEvent, M );
-//					DEBUG(cout << "XXX setting contender score to " << CSD(ec) << endl);
-			if (con.getEventCount().dups < 0) {
-				cout << "CRITICAL FAILURE!" << endl;
-				cout << "Contender event count = " << con.getEventCount().dups << endl;
-				exit(-1);
-			}
-			string label = "moving " + p->getLabel() + " to [" + eventSymbol[nuEvent] + "]" + nuHost->getLabel();
-			con.setLabel(label);
-			neighbours.insert(con);
-//					cerr << t << ',' << T << ',' << p << ',' << con.getScore() << endl;
+			toVertices.push_back(make_pair(v,exp(-CSD(ec)/T)));
+			total += exp(-CSD(ec)/T);
 		}
-		double d;
-		_debugging = true;
-		double total(0.0);
-		set<Contender> adjustedNeighbours;
-		for (auto nei : neighbours) {
-			d = nei.getScore() - minScore; // XXX This is a fudge...
-//			cerr << "d=" << d << endl;
-			DEBUG(cout << "relative CSD for this contender = " << d << endl);
-			nei.setScore(exp(-d / (1.0*T)));
-			total += nei.getScore();
-			adjustedNeighbours.insert(nei);
-			DEBUG(cout << "T = " << T << "; new score = " << nei.getScore() << endl);
-			DEBUG(cout << "new total " << total << endl);
-		}
-//		for (auto nei : neighbours) {
-//		}
-		numNeighbours += neighbours.size();
-		DEBUG(cout << "total before dran() = " << total << endl);
-		double r = dran(total);
-		DEBUG(cout << "total after dran() = " << total << endl);
-		/***********************************
-		 * Now the sampling!
-		 ***********************************/
-		DEBUG(cout << "initial r = " << r << " from U[0, " << total << "]" << endl);
-		for (auto nei : adjustedNeighbours) {
-			if (r <= nei.getScore()) {
-				DEBUG(cout << "r=" << r << "; score=" << nei.getScore() << endl);
-				if (nei._noMove) {
-					DEBUG(cout << "Selected move: No change (probability = " << (nei.getScore()/total) << ")" << endl);
-				} else {
-					// sample this one
-					DEBUG(cout << "Selected move: " << nei.getLabel() << " (rel. probability = " << nei.getScore() << ")" << endl);
-					nei.getMap()->moveToHost(nei.getParasite(), nei.getHost(), nei.getEvent());
-					DEBUG(nei.getMap()->checkValidHostOrdering());
+
+		if (v == top)
+			break;
+	}
+	DEBUG(cout << "toVertices has size " << toVertices.size() << endl;)
+	DEBUG(cout << "total is " << total << endl;)
+	
+	/*for (auto v : toVertices) {
+		ec.clear();
+		if (v.first->isAncestralTo(fromVertex))
+			ec.losses = dupsToMove*s->getDistUp(fromVertex,v.first);
+		else if (fromVertex->isAncestralTo(v.first))
+			ec.losses = -dupsToMove*s->getDistUp(v.first,fromVertex);
+
+		//pair not updating?
+		v.second = exp(-CSD(ec)/T);
+		total += v.second;
+
+	}*/
+
+	//resample vertex
+	double r = dran(total);
+	/***********************************
+	 * Now the sampling!
+	 ***********************************/
+	for (auto v : toVertices) {
+		DEBUG(cout << "r = " << r << ", weight = " << v.second << endl;)
+
+		if (r <= v.second) {
+			// sample this one
+
+			//recount :(
+			EventCount ec;
+			if (v.first->isAncestralTo(fromVertex))
+				ec.losses = dupsToMove*s->getDistUp(fromVertex,v.first);
+			else if (fromVertex->isAncestralTo(v.first))
+				ec.losses = -dupsToMove*s->getDistUp(v.first,fromVertex);
+			DEBUG(cout << "Event count change is " << ec << endl;)
+			ec += CMM.countEvents();
+			CMM.setCurrentEventCount(ec);
+			//event count is wrong
+			DEBUG(cout << "New event count is " << ec << endl;)
+
+			DEBUG(cout << "Moving from " << fromVertex->getLabel() << " to " << v.first->getLabel() << endl;)
+
+			for (auto n : invMap[fromVertex]) 
+				if (CMM.getMap(n)->getEvent(n) == duplication) {
+					DEBUG(cout << "Moving " << n->getLabel() << " to " << v.first->getLabel() << endl;)
+					CMM.getMap(n)->moveToHost(n, v.first, duplication);
+					CMM.movePToHost(n, fromVertex, v.first);
 				}
 
-				CMM.setCurrentEventCount(nei.getEventCount());
+			if (v.first != fromVertex)
+				DEBUG(cout << "Empty move succeeded!" << endl;)
 
-				break;
-			}
-			DEBUG(cout << r << ' ');
-			r -= nei.getScore();
+			break;
 		}
-		DEBUG(cout << endl);
+		r -= v.second;
+	}	
 
-
+	DEBUG(cout << endl;)
 }
 
 }; // end of namespace
