@@ -51,8 +51,10 @@ void EmptyMove::apply(CophyMultiMap& CMM, double T) {
 	}
 	DEBUG(cout << "fromVertices: "; for (auto v : fromVertices) cout << v->getLabel() << " "; cout << endl;)
 
-	if (fromVertices.size() == 0)
+	if (fromVertices.size() == 0) {
+		DEBUG(cout << "Nothing to move" << endl;)
 		return;
+	}
 	
 	//choose a vertex from fromVertices
 	Node* fromVertex = fromVertices[iran(fromVertices.size())];
@@ -126,7 +128,13 @@ void EmptyMove::apply(CophyMultiMap& CMM, double T) {
 		if (v == top)
 			break;
 	}
-	DEBUG(cout << "toVertices: "; for (auto v : toVertices) cout << v.first->getLabel() << " "; cout << endl;)
+
+	if (toVertices.size() == 1) {
+		DEBUG(cout << "Nowhere to go" << endl;)
+		return;
+	}
+
+	DEBUG(cout << "toVertices: "; for (auto v : toVertices) cout << v.first->getLabel() << "," << v.second << " "; cout << endl;)
 	DEBUG(cout << "total is " << total << endl;)
 	
 	//resample vertex
