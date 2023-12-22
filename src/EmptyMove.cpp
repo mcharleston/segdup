@@ -38,7 +38,15 @@ void EmptyMove::apply(CophyMultiMap& CMM, double T) {
 
 	Tree* s = CMM.getHostTree();
 	inversenodemap& invMap = CMM.getInverseMap();
-	DEBUG(for(auto v : s->getVertices()) { cout << v.second->getLabel() << ": "; for (auto n : invMap[v.second]) cout << n->getLabel() << " "; cout << endl; })
+	DEBUG(
+		for(auto v : s->getVertices()) {
+			cout << v.second->getLabel() << ": ";
+			for (auto n : invMap[v.second]) {
+				cout << n->getLabel() << " ";
+			}
+			cout << endl;
+		}
+	)
 	vector<Node*> fromVertices;
 	for (auto v : s->getVertices()) {
 		int dupsAtV = 0;
@@ -49,7 +57,13 @@ void EmptyMove::apply(CophyMultiMap& CMM, double T) {
 		if (dupsAtV > 1)
 			fromVertices.push_back(v.second);
 	}
-	DEBUG(cout << "fromVertices: "; for (auto v : fromVertices) cout << v->getLabel() << " "; cout << endl;)
+	DEBUG(
+		cout << "fromVertices: ";
+		for (auto v : fromVertices) {
+			cout << v->getLabel() << " ";
+		}
+		cout << endl;
+	)
 
 	if (fromVertices.size() == 0) {
 		DEBUG(cout << "Nothing to move" << endl;)
