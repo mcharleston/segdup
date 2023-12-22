@@ -343,7 +343,7 @@ Node* CophyMap::mapToLCAofChildren(Node* p) {
 }
 
 void CophyMap::moveToHost(Node* p, Node *h) {
-	bool _debugging(false);
+	bool _debugging(true);
 	try {
 		// have to change the host of p stored in phi, the nodemap AND the inversenodemap
 		// first remove p from the inverseNodeMap of h:

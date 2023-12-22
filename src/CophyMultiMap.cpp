@@ -171,6 +171,8 @@ Tree* CophyMultiMap::getHostTree() {
 void CophyMultiMap::movePToHost(Node* p, Node *oldHost, Node *nuHost) {
 //	invMap[p].erase(oldHost);
 //	invMap[p].insert(nuHost);
+	bool _debugging(false);
+	DEBUG(cout << "movePToHost(" << p->getLabel() << "," << oldHost->getLabel() << "," << nuHost->getLabel() << ")" << endl);
 	invMap[oldHost].erase(p);
 	invMap[nuHost].insert(p);
 	for (auto p : invMap[oldHost]) {
@@ -179,6 +181,7 @@ void CophyMultiMap::movePToHost(Node* p, Node *oldHost, Node *nuHost) {
 	for (auto p : invMap[nuHost]) {
 		p->dupHeight = -1;
 	}
+	DEBUG(cout << "Done" << endl;)
 }
 
 void CophyMultiMap::doPageReconciliation() {

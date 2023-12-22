@@ -33,10 +33,12 @@ void EmptyMove::apply(CophyMultiMap& CMM, double T) {
 	bool _debugging(true);
 
 	DEBUG(cout << "Attempting empty move" << endl;)
+	DEBUG(string str; CMM.toCompactString(str); cout << str << endl;)
 	//find all species tree vertices with >1 duplications mapped to them
 
 	Tree* s = CMM.getHostTree();
 	inversenodemap& invMap = CMM.getInverseMap();
+	DEBUG(for(auto v : s->getVertices()) { cout << v.second->getLabel() << ": "; for (auto n : invMap[v.second]) cout << n->getLabel() << " "; cout << endl; })
 	vector<Node*> fromVertices;
 	for (auto v : s->getVertices()) {
 		int dupsAtV = 0;
@@ -47,7 +49,7 @@ void EmptyMove::apply(CophyMultiMap& CMM, double T) {
 		if (dupsAtV > 1)
 			fromVertices.push_back(v.second);
 	}
-	DEBUG(cout << "fromVertices has size " << fromVertices.size() << endl;)
+	DEBUG(cout << "fromVertices: "; for (auto v : fromVertices) cout << v->getLabel() << " "; cout << endl;)
 
 	if (fromVertices.size() == 0)
 		return;
@@ -76,7 +78,7 @@ void EmptyMove::apply(CophyMultiMap& CMM, double T) {
 				top = s->min(top, restrict);
 			}
 
-			//if children of n are not at fromVertex get lower limit
+			//if children of n are not at fromVertex OR are speciations get lower limit
 			for (Node* c = n->getFirstChild(); c != nullptr; c = c->getSibling()) {
 				if (CMM.getMap(c)->getHost(c) != fromVertex || CMM.getMap(c)->getEvent(c) != duplication) {
 					childHosts.insert(CMM.getMap(c)->getHost(c));
@@ -89,9 +91,14 @@ void EmptyMove::apply(CophyMultiMap& CMM, double T) {
 
 	//calculate weights, total
 	int dupsToMove = 0;
-	for (auto n : invMap[fromVertex]) 
-		if (CMM.getMap(n)->getEvent(n) == duplication)
+	for (auto n : invMap[fromVertex]) {
+		if (CMM.getMap(n)->getEvent(n) == duplication) {
 			dupsToMove++;
+
+			if (!n->hasParent()) 
+				dupsToMove++;
+		}
+	}
 
 	EventCount ec;
 	Node* temp;
@@ -119,22 +126,9 @@ void EmptyMove::apply(CophyMultiMap& CMM, double T) {
 		if (v == top)
 			break;
 	}
-	DEBUG(cout << "toVertices has size " << toVertices.size() << endl;)
+	DEBUG(cout << "toVertices: "; for (auto v : toVertices) cout << v.first->getLabel() << " "; cout << endl;)
 	DEBUG(cout << "total is " << total << endl;)
 	
-	/*for (auto v : toVertices) {
-		ec.clear();
-		if (v.first->isAncestralTo(fromVertex))
-			ec.losses = dupsToMove*s->getDistUp(fromVertex,v.first);
-		else if (fromVertex->isAncestralTo(v.first))
-			ec.losses = -dupsToMove*s->getDistUp(v.first,fromVertex);
-
-		//pair not updating?
-		v.second = exp(-CSD(ec)/T);
-		total += v.second;
-
-	}*/
-
 	//resample vertex
 	double r = dran(total);
 	/***********************************
@@ -153,6 +147,7 @@ void EmptyMove::apply(CophyMultiMap& CMM, double T) {
 			else if (fromVertex->isAncestralTo(v.first))
 				ec.losses = -dupsToMove*s->getDistUp(v.first,fromVertex);
 			DEBUG(cout << "Event count change is " << ec << endl;)
+			DEBUG(cout << "Current event count is " << CMM.countEvents() << endl;)
 			ec += CMM.countEvents();
 			CMM.setCurrentEventCount(ec);
 			//event count is wrong
@@ -160,7 +155,8 @@ void EmptyMove::apply(CophyMultiMap& CMM, double T) {
 
 			DEBUG(cout << "Moving from " << fromVertex->getLabel() << " to " << v.first->getLabel() << endl;)
 
-			for (auto n : invMap[fromVertex]) 
+			set<Node*> toMove(invMap[fromVertex]);
+			for (auto n : toMove) 
 				if (CMM.getMap(n)->getEvent(n) == duplication) {
 					DEBUG(cout << "Moving " << n->getLabel() << " to " << v.first->getLabel() << endl;)
 					CMM.getMap(n)->moveToHost(n, v.first, duplication);
@@ -169,6 +165,9 @@ void EmptyMove::apply(CophyMultiMap& CMM, double T) {
 
 			if (v.first != fromVertex)
 				DEBUG(cout << "Empty move succeeded!" << endl;)
+
+			DEBUG(string str; CMM.toCompactString(str); cout << str << endl;)
+			DEBUG(for(auto v : s->getVertices()) { cout << v.second->getLabel() << ": "; for (auto n : invMap[v.second]) cout << n->getLabel() << " "; cout << endl; })
 
 			break;
 		}

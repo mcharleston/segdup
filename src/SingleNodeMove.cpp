@@ -175,11 +175,15 @@ void SingleNodeMove::apply(CophyMultiMap& CMM, double T) {
 				} else {
 					// sample this one
 					DEBUG(cout << "Selected move: " << nei.getLabel() << " (rel. probability = " << nei.getScore() << ")" << endl);
+					CMM.movePToHost(nei.getParasite(), CMM.getMap(nei.getParasite())->getHost(nei.getParasite()), nei.getHost());
 					nei.getMap()->moveToHost(nei.getParasite(), nei.getHost(), nei.getEvent());
 					DEBUG(nei.getMap()->checkValidHostOrdering());
 				}
 
 				CMM.setCurrentEventCount(nei.getEventCount());
+
+				DEBUG(string str; CMM.toCompactString(str); cout << str << endl;)
+				DEBUG(inversenodemap& invMap = CMM.getInverseMap(); for(auto v : CMM.getHostTree()->getVertices()) { cout << v.second->getLabel() << ": "; for (auto n : invMap[v.second]) cout << n->getLabel() << " "; cout << endl; })
 
 				break;
 			}
