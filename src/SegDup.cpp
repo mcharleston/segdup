@@ -680,7 +680,12 @@ void Algorithm2(CophyMultiMap& CMM, vector<DupMove*> moves, vector<double> probs
 	bool _debugging(true);
 	DEBUG(cout << hline << "Algorithm1" << endl << hline);
 	DEBUG(cout << "Input multi-map:" << endl << CMM);
-	CMM.doPageReconciliation();
+	bool _doEarlyReconciliation(true);
+	if (_doEarlyReconciliation) {
+		CMM.doEarlyReconciliation();
+	} else {
+		CMM.doPageReconciliation();
+	}
 	DEBUG(cout << "Initial reconciliation complete:" << endl << CMM);
 
 	CMM.putAllMoveableNodes();
@@ -1123,10 +1128,12 @@ string segdupHelp("SegDup Help:\n"
 		"\t-o (samples)\n\t\tto show the sampled maps (default value false).\n"
 	);
 int main(int argn, char** argv) {
+	bool _debugging(false);
 	if (argn <= 1) {
 		cout << segdupHelp << endl;
 		return 0;
 	}
+	cout << "SegDup!" << endl;
 	CophyMultiMap CMM;
 	summaryfile.open("summary.csv", std::ios_base::app);
 	summaryfile << "codivs,dups,losses,cost\n";

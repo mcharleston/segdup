@@ -39,6 +39,7 @@ public:
 	EventCount& countEvents();
 	void setCurrentEventCount(const EventCount& ec);
 	void calcEventCount();	// XXX change to count events
+	void doEarlyReconciliation();
 	void doPageReconciliation();
 
 //	CophyMap*& operator[](Tree* P) { return maps[P]; }

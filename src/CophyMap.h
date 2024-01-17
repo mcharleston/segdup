@@ -53,6 +53,7 @@ public:
 	EventCount countEvents();
 	std::string describeEvent(eventType e);
 	inline std::string describeEvent(Node *p) { return describeEvent(event[p]); }
+	void doEarlyReconciliation();
 	void doPageReconciliation();
 
 	int getDuplicationHeight(Node* p);

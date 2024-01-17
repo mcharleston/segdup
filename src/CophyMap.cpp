@@ -202,6 +202,22 @@ std::string CophyMap::describeEvent(eventType e) {
 	return "";
 }
 
+void CophyMap::doEarlyReconciliation() {
+	bool _debugging(true);
+	DEBUG(cout << "doEarlyReconciliation" << endl);
+	Node* h = H->getRoot();
+	for (auto pr : P->getVertices()) {
+		Node* p = pr.second;
+		if (p->isLeaf()) {
+			continue;
+		}
+		phi[p] = h;
+		invPhi[h].insert(p);
+	}
+	storeAssociationInfo();
+	DEBUG(cout << "reconciliation is done" << endl);
+}
+
 void CophyMap::doPageReconciliation() {
 	bool _debugging(false);
 	DEBUG(cout << "doPageReconciliation" << endl);

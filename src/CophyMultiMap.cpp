@@ -184,6 +184,16 @@ void CophyMultiMap::movePToHost(Node* p, Node *oldHost, Node *nuHost) {
 	DEBUG(cout << "Done" << endl;)
 }
 
+void CophyMultiMap::doEarlyReconciliation() {
+	bool _debugging(true);
+	for (auto mpr : maps) {
+		CophyMap *Phi = mpr.second;
+		Phi->doEarlyReconciliation();
+		Phi->inferEvents();
+		DEBUG(cout << *Phi << endl);
+	}
+}
+
 void CophyMultiMap::doPageReconciliation() {
 	bool _debugging(true);
 	for (auto mpr : maps) {
