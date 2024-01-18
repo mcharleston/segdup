@@ -20,6 +20,10 @@ using namespace std;
 
 namespace segdup {
 
+double binom(int n, int k) {
+    return 1/((n+1)*std::beta(n-k+1,k+1));
+}
+
 SingleVertexMove::SingleVertexMove() {
 	// TODO Auto-generated constructor stub
 
@@ -29,20 +33,7 @@ SingleVertexMove::~SingleVertexMove() {
 	// TODO Auto-generated destructor stub
 }
 
-void SingleVertexMove::apply(CophyMultiMap& CMM, double T) {
-	bool _debugging(true);
-
-	DEBUG(cout << "Attempting single vertex move" << endl;)
-	DEBUG(string str; CMM.toCompactString(str); cout << str << endl;)
-
-	//choose up or down
-	bool up = (iran(2) == 0 ? true : false);
-
-	//find all species tree vertices with >= 2 duplications mapped to them and are non-root/leaf
-	Tree* s = CMM.getHostTree();
-	inversenodemap& invMap = CMM.getInverseMap();
-
-	vector<Node*> fromVertices;
+void calculateFromVertices(CophyMultiMap& CMM, Tree* s, bool up, vector<Node*>& fromVertices) {
 	for (auto v : s->getVertices()) {
 		if (up && !v.second->hasParent() || !up && v.second->isLeaf())
 			continue;
@@ -55,28 +46,9 @@ void SingleVertexMove::apply(CophyMultiMap& CMM, double T) {
 		if (dupsAtV >= 2)
 			fromVertices.push_back(v.second);
 	}
+}
 
-	if (fromVertices.size() == 0) {
-		DEBUG(cout << "Nothing to move" << endl;)
-		return;
-	}
-
-	//choose vertex
-	Node* fromVertex = fromVertices[iran(fromVertices.size())];
-
-	//if moving down, choose child
-	Node* toVertex;
-	if (up)
-		toVertex = fromVertex->getParent();
-	else {
-		toVertex = fromVertex->getFirstChild();
-		if (iran(2) == 1)
-			toVertex = toVertex->getSibling();
-	}
-	
-	//find all movable nodes for the chosen vertex
-	vector<Node*> movableNodes;
-
+void calculateMovableNodes(CophyMultiMap& CMM, Node* fromVertex, Node* toVertex, bool up, vector<Node*>& movableNodes) {
 	for (auto n : invMap[fromVertex]) {
 		if (up) {
 			if (!n->hasParent()) {
@@ -103,6 +75,45 @@ void SingleVertexMove::apply(CophyMultiMap& CMM, double T) {
 				movableNodes.push_back(n);
 		}
 	}
+}
+
+void SingleVertexMove::apply(CophyMultiMap& CMM, double T) {
+	bool _debugging(true);
+
+	DEBUG(cout << "Attempting single vertex move" << endl;)
+	DEBUG(string str; CMM.toCompactString(str); cout << str << endl;)
+
+	//choose up or down
+	bool up = (iran(2) == 0 ? true : false);
+
+	//find all species tree vertices with >= 2 duplications mapped to them and are non-root/leaf
+	Tree* s = CMM.getHostTree();
+	inversenodemap& invMap = CMM.getInverseMap();
+
+	vector<Node*> fromVertices;
+	calculateFromVertices(CMM, s, up, fromVertices);
+
+	if (fromVertices.size() == 0) {
+		DEBUG(cout << "Nothing to move" << endl;)
+		return;
+	}
+
+	//choose vertex
+	Node* fromVertex = fromVertices[iran(fromVertices.size())];
+
+	//if moving down, choose child
+	Node* toVertex;
+	if (up)
+		toVertex = fromVertex->getParent();
+	else {
+		toVertex = fromVertex->getFirstChild();
+		if (iran(2) == 1)
+			toVertex = toVertex->getSibling();
+	}
+	
+	//find all movable nodes for the chosen vertex
+	vector<Node*> movableNodes;
+	calculateMovableNodes(CMM, fromVertex, toVertex, up, movableNodes);
 
 	//reject if not enough movable nodes
 	if (movableNodes.size() < 2) {
@@ -111,9 +122,57 @@ void SingleVertexMove::apply(CophyMultiMap& CMM, double T) {
 	}
 
 	//choose number of nodes to move
+	int movableNodesSize = movableNodes.size();
+	int choose = iran((movableNodesSize*(movableNodesSize-1))/2);
+	int numberToMove = 2;
+	while (choose >= numberToMove) {
+		choose -= numberToMove;
+		numberToMove++;
+	}
+
 	//choose nodes to move
-	//move nodes
+	//changes movableNodes!
+	vector<Node*> nodesToMove;
+	for (int i = 0; i < numberToMove; i++) {
+		int j = iran(movableNodes.size());
+		nodesToMove.push_back(movableNodes[j]);
+		movableNodes.erase(j);
+	}
+	
+	//move nodes + calculate cost
+	EventCount ec;
+	ec.losses = (up ? 1 : -1) * numberToMove;
+	for (auto n : nodesToMove) {
+		CMM.getMap(n)->moveToHost(n, toVertex, duplication);
+		CMM.movePToHost(n, fromVertex, toVertex);
+
+		if (!n->hasParent())
+			ec.losses += (up ? 1 : -1);
+	}
+
+	//calculate stuff for reverse transition probability
+	vector<Node*> reverseFromVertices;
+	vector<Node*> reverseMovableNodes;
+	calculateFromVertices(CMM, s, !up, reverseFromVertices);
+	calculatemovableNodes(CMM, toVertex, fromVertex, !up, reverseMovableNodes);
+
 	//accept/reject
+	double MHProb = (up ? 0.5 : 2.0);
+	MHProb *= fromVertices.size();
+	MHProb /= reverseFromVertices.size();
+	MHProb *= movableNodesSize*(movableNodesSize-1);
+	MHProb /= reverseMovableNodes.size()*(reverseMoveableNodes.size()-1);
+	MHProb *= binom(movableNodesSize, numberToMove);
+	MHProb /= binom(reverseMovableNodes.size(), numberToMove);
+	MHProb *= exp(-CSD(ec)/T);
+	
+	if (dran(1) < MHProb) {
+		//accept
+	}
+	else {
+		//reject
+	}
+
 	
 
 
