@@ -215,8 +215,6 @@ void CophyMap::doEarlyReconciliation() {
 		invPhi[h].insert(p);
 	}
 	storeAssociationInfo();
-	for (auto n : invPhi[h->getFirstChild()])
-		DEBUG(cout << n->getLabel() << '\t');
 	DEBUG(cout << "reconciliation is done" << endl);
 }
 

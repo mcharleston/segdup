@@ -34,6 +34,7 @@
 #include "Node.h"
 #include "NodeMap.h"
 #include "SingleNodeMove.h"
+#include "SingleVertexMove.h"
 #include "Tree.h"
 
 /**
@@ -679,8 +680,8 @@ void Algorithm2(CophyMultiMap& CMM, vector<DupMove*> moves, vector<double> probs
 
 	bool _debugging(true);
 	DEBUG(cout << hline << "Algorithm1" << endl << hline);
-	DEBUG(cout << "Input multi-map:" << endl << CMM);
-	bool _doEarlyReconciliation(true);
+	//DEBUG(cout << "Input multi-map:" << endl << CMM);
+	bool _doEarlyReconciliation(false);
 	if (_doEarlyReconciliation) {
 		CMM.doEarlyReconciliation();
 	} else {
@@ -1221,15 +1222,17 @@ int main(int argn, char** argv) {
 		}
 	}
 	cout << hline;
-	CMM.doPageReconciliation();
+	//CMM.doPageReconciliation();
 	map<string, int> sampledDistribution;
 //	Algorithm1(CMM, sampledDistribution);
 	std::vector<DupMove*> moves;
 	moves.push_back(new SingleNodeMove);
-	moves.push_back(new EmptyMove);
+	//moves.push_back(new EmptyMove);
+	moves.push_back(new SingleVertexMove);
 	std::vector<double> probs;
-	probs.push_back(0.75);
-	probs.push_back(0.25);
+	probs.push_back(0.5);
+	//probs.push_back(0.1);
+	probs.push_back(0.5);
 	Algorithm2(CMM, moves, probs, &sampledDistribution);
 
 

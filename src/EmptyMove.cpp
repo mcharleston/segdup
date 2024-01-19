@@ -172,7 +172,6 @@ void EmptyMove::apply(CophyMultiMap& CMM, double T) {
 			DEBUG(cout << "Current event count is " << CMM.countEvents() << endl;)
 			ec += CMM.countEvents();
 			CMM.setCurrentEventCount(ec);
-			//event count is wrong
 			DEBUG(cout << "New event count is " << ec << endl;)
 
 			DEBUG(cout << "Moving from " << fromVertex->getLabel() << " to " << v.first->getLabel() << endl;)
