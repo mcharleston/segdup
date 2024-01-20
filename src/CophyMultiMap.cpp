@@ -7,6 +7,7 @@
 
 #include "../utility/debugging.h"
 #include "CophyMultiMap.h"
+#include <boost/range/adaptor/reversed.hpp>
 
 using namespace std;
 
@@ -206,15 +207,30 @@ void CophyMultiMap::doPageReconciliation() {
 
 void CophyMultiMap::putAllMoveableNodes() {
 	map<CophyMap*, set<Node*>> iV;	// internal vertices of each parasite / gene tree
+	map<Node*, bool> movable;
 	for (auto mpr : getMaps()) {
 		CophyMap* M = mpr.second;
 		Tree* G = M->getParasiteTree();
 		G->putInternalVertices(iV[M]);
 		G->gatherVertices();
-		for (auto v : G->getVertices()) {
+		for (auto v : boost::adaptors::reverse(G->getVertices())) {
 			if (!v.second->isLeaf()) {
-				allMoveableNodes.push_back(pair<Node*, CophyMap*>(v.second, M));
+				movable[v.second] = false;
+
+				if (M->getEvent(v.second) == duplication)
+					movable[v.second] = true;
+				for (Node* c = v.second->getFirstChild(); c != nullptr; c = c->getSibling()) {
+					if (movable[c]) {
+						movable[v.second] = true;
+						break;
+					}
+				}
+
+				if (movable[v.second])
+					allMoveableNodes.push_back(pair<Node*, CophyMap*>(v.second, M));
 			}
+			else 
+				movable[v.second] = false;
 		}
 	}
 }
