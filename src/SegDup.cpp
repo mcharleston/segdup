@@ -50,6 +50,7 @@ bool _silent(false);
 bool _outputProbabilities(false);
 bool _saveTrace(false);
 bool _showSampledDistribution(false);
+int outputInterval(1);
 int nSteps(1000);
 double Tinitial(10.0);
 double Tfinal(0.0);
@@ -693,7 +694,6 @@ void Algorithm2(CophyMultiMap& CMM, vector<DupMove*> moves, vector<double> probs
 
 	double T(0.0);
 	ofstream ftrace;
-	int sampleNumber(0);
 	if (_saveTrace) {
 		ftrace.open("segdup-trace.csv", std::ofstream::out);
 		ftrace << "i,c,d,l,s,t" << endl;
@@ -738,12 +738,13 @@ void Algorithm2(CophyMultiMap& CMM, vector<DupMove*> moves, vector<double> probs
 		}
 
 		if (_saveTrace) {
-			++sampleNumber;
+			if (t % outputInterval == 0) {
 //					ftrace << sampleNumber << ",\"" << mapDescription << "\"," << to_string(CSD(ec)) << endl;
-			ftrace << sampleNumber << ',' << ec.codivs << ',' << ec.dups << ','
+				ftrace << t << ',' << ec.codivs << ',' << ec.dups << ','
 					<< ec.losses << ',' << to_string(CSD(ec)) << ','
 					<< T
 					<< endl;
+			}
 		}
 //		DEBUG(cout << nei.getLabel() << '\t' << nei.getScore() << endl);
 	}
@@ -1206,6 +1207,10 @@ int main(int argn, char** argv) {
 			} else if (!strcmp(argv[i], "samples")) {
 				cout << "Setting Show_Samples to true" << endl;
 				_showSampledDistribution = true;
+			} else if (!strcmp(argv[i], "interval")) {
+				cout << "Output every n steps" << endl;
+				++i;
+				outputInterval = atoi(argv[i]);
 			} else if (!strcmp(argv[i], "trace")) {
 				cout << "Setting Save a Trace to true" << endl;
 				_saveTrace = true;
