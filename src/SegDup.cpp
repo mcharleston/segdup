@@ -762,6 +762,22 @@ void Algorithm2(CophyMultiMap& CMM, vector<DupMove*> moves, vector<double> probs
 	cout << bestMMap << '\t' << endl;
 	cout << bestEventCount << '\t' << bestCost << endl;
 	cout << hline << endl;
+
+	//some ybc debugging
+	
+	/*CMM.calcEventCount();
+	cout << CMM.countEvents() << endl;*/
+
+	/*Tree* s = CMM.getHostTree();
+	inversenodemap& invMap = CMM.getInverseMap();*/
+	/*for (Node* p : invMap[s->getRoot()]) {
+		CophyMap* M = CMM.getMap(p);
+		cout << p->getLabel() << '\t' << M->getDuplicationHeight(p) << endl;
+	}*/
+	/*for (auto v : s->getVertices()) {
+		cout << v.first << '\t' << CMM.calcCombinedDuplicationHeight(v.second) << endl;
+	}*/
+
 	if (_saveTrace) {
 		ftrace.close();
 	}
@@ -1236,7 +1252,7 @@ int main(int argn, char** argv) {
 	moves.push_back(new SingleVertexMove);
 	std::vector<double> probs;
 	probs.push_back(0.5);
-	//probs.push_back(0.1);
+	//probs.push_back(0.5);
 	probs.push_back(0.5);
 	Algorithm2(CMM, moves, probs, &sampledDistribution);
 
