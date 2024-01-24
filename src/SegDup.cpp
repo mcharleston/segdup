@@ -1119,15 +1119,15 @@ string segdupHelp("SegDup Help:\n"
 		"\t-G <newickformatgenetree> <leafassociations>\n"
 		"\t\tAssociation list MUST be a quoted string of space-separated pairs such as 'p:A q:B' to mean\n"
 		"\t\tgene p is on species leaf A, and gene q is on species leaf B.\n"
-		"\t-n <int>\n\t\tto supply the number of steps for Algorithm 1 (default value "
-		+ to_string(nSteps) + ")\n"
-		"\t-Tinit <float>\n\t\tto supply the initial temperature (default value "
-		+ to_string(Tinitial) + ")\n"
-		"\t-d <float>\n\t\tto set the duplication event cost (default value "
-		+ to_string(duplicationCost) + ")\n"
-		"\t-l <float>\n\t\tto set the loss event cost (default value "
-		+ to_string(lossCost) + ")\n"
-		"\t-o (samples)\n\t\tto show the sampled maps (default value false).\n"
+		"\t-n <int>\n\t\tto supply the number of steps for Algorithm 1 (default value " + to_string(nSteps) + ")\n"
+		"\t-d <float>\n\t\tto set the duplication event cost (default value " + to_string(duplicationCost) + ")\n"
+		"\t-l <float>\n\t\tto set the loss event cost (default value " + to_string(lossCost) + ")\n"
+		"\t-o (samples|trace|interval <int>)\n"
+		"\t\tsamples to save the sampled distribution of maps (default value false)\n"
+		"\t\ttrace to save a trace of the progress of the search (default value false)\n"
+		"\t-Tinit <float>\n\t\tto supply the initial temperature (default value " + to_string(Tinitial) + ")\n"
+		"\t-Tfinal <float>\n\t\tto supply the final temperature (default value " + to_string(Tfinal) + ")\n"
+		"\t--seed <int>\n\t\tto set the random number generator seed\n"
 	);
 int main(int argn, char** argv) {
 	bool _debugging(false);
@@ -1202,9 +1202,10 @@ int main(int argn, char** argv) {
 			cout << "Setting Final Temperature to " << Tfinal << endl;
 		} else if (!strcmp(argv[i], "-o")) {
 			++i;
-			if (!strcmp(argv[i], "probs")) {
-				_outputProbabilities = true;
-			} else if (!strcmp(argv[i], "samples")) {
+//			if (!strcmp(argv[i], "probs")) {
+//				_outputProbabilities = true;
+//			} else
+			if (!strcmp(argv[i], "samples")) {
 				cout << "Setting Show_Samples to true" << endl;
 				_showSampledDistribution = true;
 			} else if (!strcmp(argv[i], "interval")) {
