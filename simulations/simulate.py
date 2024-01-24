@@ -6,9 +6,19 @@ multrecDir = "/home/yaoban/software/MultRec/Multrec/"
 
 system("rm summary.csv")
 
-for _ in range(2):
+for _ in range(1):
     system(kowhaiDir + "kowhai --sim -nH 15 -nP 5 -nR 1 -rB 1.0 -pC 0.5 -pJ 0.5 -rX 1.0 --for-segdup --for-multrec --verbose")
     system("cat ./for-segdup-from-kowhai.txt | xargs " + segdupDir + "segdup -n 100000 -Tinit 10 -Tfinal 0.0 -d 10 -l 1")
+
+    multrecFile = open("for-multrec-from-kowhai.txt")
+    multrecInput = multrecFile.readline()
+    multrecFile.close()
+
+    multrecFile = open("for-multrec-from-kowhai.txt", "w")
+    multrecFile.write(multrecInput[:-3] + "\"")
+    multrecFile.close()
+
+    system(multrecDir + "Multrec -d 10 -l 1 " + multrecInput[:-3] + "\" -o multrec-output.txt")
 
 f = open("summary.csv")
 output = open("results.csv", "w")
