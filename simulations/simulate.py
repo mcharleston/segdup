@@ -61,15 +61,19 @@ system("rm summary.csv")
 
 mrResults = []
 
-for _ in range(replicates):
+for r in range(replicates):
     #run programs
-    system(kowhaiDir + "kowhai --sim -nH " + str(nH) + " -nP " + str(nP) + " -nR 1 -rB " + str(rB) + " -pC " + str(pC) + " -pJ " + str(pJ) + " --for-segdup --for-multrec --verbose")
-    system("cat ./for-segdup-from-kowhai.txt | xargs " + segdupDir + "segdup -n " + str(iterations) + " -Tinit 10 -Tfinal 0.0 -d " + str(d) + " -l " + str(l))
+    system(kowhaiDir + "kowhai --sim -nH " + str(nH) + " -nP " + str(nP) + " -nR 1 -rB " + str(rB) + " -pC " + str(pC) + " -pJ " + str(pJ) + " --for-segdup --for-multrec --verbose > /dev/null")
+    print("Running segdup...")
+    system("cat ./for-segdup-from-kowhai.txt | xargs " + segdupDir + "segdup -n " + str(iterations) + " -Tinit 10 -Tfinal 0.0 -d " + str(d) + " -l " + str(l) + " > /dev/null")
+
+    #system("cp ./for-segdup-from-kowhai.txt temp/fsfk-" + str(r) + ".txt")
 
     multrecFile = open("for-multrec-from-kowhai.txt")
     multrecInput = multrecFile.readline()
     multrecFile.close()
 
+    print("Running multrec...")
     system(multrecDir + "Multrec -d " + str(d) + " -l " + str(l) + " " + multrecInput[:-3] + "\" -o multrec-output.txt")
 
     #parse multrec output
@@ -101,4 +105,5 @@ for line in f:
 f.close()
 output.close()
 
-#system("rm summary.csv multrec-output.txt")
+#clean
+system("rm summary.csv multrec-output.txt")

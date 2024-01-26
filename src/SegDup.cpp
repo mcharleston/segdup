@@ -688,6 +688,7 @@ void Algorithm2(CophyMultiMap& CMM, vector<DupMove*> moves, vector<double> probs
 	} else {
 		CMM.doPageReconciliation();
 	}
+	CMM.toCompactString(bestMMap);
 	DEBUG(cout << "Initial reconciliation complete:" << endl << CMM);
 
 	CMM.putAllMoveableNodes();
@@ -701,6 +702,9 @@ void Algorithm2(CophyMultiMap& CMM, vector<DupMove*> moves, vector<double> probs
 	ostringstream bestPrettyMap;
 	CMM.calcEventCount();
 	bestEventCount = CMM.countEvents();
+	bestCost = CSD(bestEventCount);
+
+	DEBUG(cout << "number of movable nodes: " << CMM.getAllMoveableNodes().size() << endl);
 
 	if (CMM.getAllMoveableNodes().size() != 0) {
 		for (int t(1); t <= nSteps; ++t) {
