@@ -712,6 +712,8 @@ void Algorithm2(CophyMultiMap& CMM, vector<DupMove*> moves, vector<double> probs
 			EventCount ec;
 			T = (Tinitial-Tfinal)*(1.0 - (1.0 * (t-1.0) / nSteps)) + Tfinal;
 
+			//if (t == 2752238) 
+
 			SelectNextConfiguration(CMM, T, moves, probs);	// modifies CMM
 													
 			if (_showSampledDistribution) {

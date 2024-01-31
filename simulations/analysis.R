@@ -10,8 +10,7 @@ with(dat, plot(cost ~ mrCost))
 abline(0,1,col="red")
 with(dat, sum(cost > mrCost))
 with(dat, sum(cost < mrCost))
-with(dat, sum(dups > mrDups))
-with(dat, sum(dups < mrDups))
+with(dat, cost - mrCost)
 
 #compare to true reconciliation
 plot(d*dat$nAllDupEvents+l*dat$nLineageSort, dat$cost)
