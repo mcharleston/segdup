@@ -164,10 +164,10 @@ EventCount& CophyMultiMap::countEvents(const std::string& mapDescription) {
 	return mmEventCounts.at(mapDescription);
 }
 
-Tree* CophyMultiMap::getHostTree() {
-	//definitely a hack
-	return allMoveableNodes[0].second->getHostTree();
-}
+//Tree* CophyMultiMap::getHostTree() {
+//	// definitely a hack
+//	return allMoveableNodes[0].second->getHostTree();
+//}
 
 void CophyMultiMap::movePToHost(Node* p, Node *oldHost, Node *nuHost) {
 //	invMap[p].erase(oldHost);

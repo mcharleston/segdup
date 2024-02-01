@@ -25,11 +25,12 @@ private:
 	EventCount currentEventCount;
 	double duplicationCost;
 	double lossCost;
+	Tree* H;
 public:
-	CophyMultiMap(double dup = defDuplicationCost, double loss = defLossCost) : duplicationCost(dup), lossCost(loss) {}
+	CophyMultiMap(double dup = defDuplicationCost, double loss = defLossCost) : duplicationCost(dup), lossCost(loss), H(nullptr) {}
 	virtual ~CophyMultiMap() {}
 
-	void addCophyMap(CophyMap* M) { maps[M->getParasiteTree()] = M; }
+	void addCophyMap(CophyMap* M) { maps[M->getParasiteTree()] = M; H = M->getHostTree(); }
 	int calcCombinedDuplicationHeight(Node *h);
 	void calcInverseMap();
 	inversenodemap& getInverseMap();
@@ -48,7 +49,7 @@ public:
 
 	std::map<Tree*, CophyMap*>& getMaps() { return maps; }
 	CophyMap* getMap(Node* n) { return maps[n->getTree()]; }
-	Tree* getHostTree();
+	Tree* getHostTree() { return H; }
 
 	void movePToHost(Node* p, Node *oldHost, Node *nuHost);
 

@@ -25,26 +25,29 @@ double binom(int n, int k) {
 }
 
 SingleVertexMove::SingleVertexMove() {
-	// TODO Auto-generated constructor stub
 
 }
 
 SingleVertexMove::~SingleVertexMove() {
-	// TODO Auto-generated destructor stub
+
 }
 
 void calculateFromVertices(CophyMultiMap& CMM, inversenodemap& invMap, Tree* s, bool up, vector<Node*>& fromVertices) {
 	for (auto v : s->getVertices()) {
-		if (up && !v.second->hasParent() || !up && v.second->isLeaf())
+		if ((up && !v.second->hasParent()) || (!up && v.second->isLeaf())) {
 			continue;
+		}
 
 		int dupsAtV = 0;
-		for (auto n : invMap[v.second]) 
-			if (CMM.getMap(n)->getEvent(n) == duplication)
+		for (auto n : invMap[v.second]) {
+			if (CMM.getMap(n)->getEvent(n) == duplication) {
 				dupsAtV++;
+			}
+		}
 
-		if (dupsAtV >= 2)
+		if (dupsAtV >= 2) {
 			fromVertices.push_back(v.second);
+		}
 	}
 }
 
@@ -96,11 +99,11 @@ void SingleVertexMove::apply(CophyMultiMap& CMM, double T) {
 	DEBUG(cout << "Attempting single vertex move" << endl;)
 	DEBUG(string str; CMM.toCompactString(str); cout << str << endl;)
 
-	//choose up or down
+	// choose up or down
 	bool up = (iran(2) == 0 ? true : false);
-	DEBUG(cout << "Moving " << (up ? "up" : "down") << endl;)
+	DEBUG(cout << "Moving " << (up ? "up" : "down") << endl)
 
-	//find all species tree vertices with >= 2 duplications mapped to them and are non-root/leaf
+	// find all species tree vertices with >= 2 duplications mapped to them and are non-root/leaf
 	Tree* s = CMM.getHostTree();
 	inversenodemap& invMap = CMM.getInverseMap();
 
@@ -119,11 +122,11 @@ void SingleVertexMove::apply(CophyMultiMap& CMM, double T) {
 		return;
 	}
 
-	//choose vertex
+	// choose vertex
 	Node* fromVertex = fromVertices[iran(fromVertices.size())];
 	DEBUG(cout << "Moving from vertex " << fromVertex->getLabel() << endl;)
 
-	//if moving down, choose child
+	// if moving down, choose child
 	Node* toVertex;
 	if (up)
 		toVertex = fromVertex->getParent();
@@ -134,7 +137,7 @@ void SingleVertexMove::apply(CophyMultiMap& CMM, double T) {
 	}
 	DEBUG(cout << "Moving to vertex " << toVertex->getLabel() << endl;)
 	
-	//find all movable nodes for the chosen vertex
+	// find all movable nodes for the chosen vertex
 	vector<Node*> movableNodes;
 	calculateMovableNodes(CMM, invMap, fromVertex, toVertex, up, movableNodes);
 	DEBUG(
@@ -145,13 +148,13 @@ void SingleVertexMove::apply(CophyMultiMap& CMM, double T) {
 		cout << endl;
 	)
 
-	//reject if not enough movable nodes
+	// reject if not enough movable nodes
 	if (movableNodes.size() < 2) {
 		DEBUG(cout << "Not enough movable nodes at chosen vertex" << endl;)
 		return;
 	}
 
-	//choose number of nodes to move
+	// choose number of nodes to move
 	int movableNodesSize = movableNodes.size();
 	int choose = iran((movableNodesSize*(movableNodesSize-1))/2);
 	int numberToMove = 2;
@@ -161,8 +164,8 @@ void SingleVertexMove::apply(CophyMultiMap& CMM, double T) {
 	}
 	DEBUG(cout << "Moving " << numberToMove << " nodes" << endl;)
 
-	//choose nodes to move
-	//changes movableNodes!
+	// choose nodes to move
+	// changes movableNodes!
 	vector<Node*> nodesToMove;
 	for (int i = 0; i < numberToMove; i++) {
 		int j = iran(movableNodes.size());
@@ -177,7 +180,7 @@ void SingleVertexMove::apply(CophyMultiMap& CMM, double T) {
 		cout << endl;
 	)
 	
-	//move nodes + calculate cost
+	// move nodes + calculate cost
 	EventCount ec;
 	ec.losses = (up ? 1 : -1) * numberToMove;
 
@@ -199,7 +202,7 @@ void SingleVertexMove::apply(CophyMultiMap& CMM, double T) {
 	ec.dups = nuJointDupHeightThere - oldJointDupHeightThere;
 	ec.dups += nuJointDupHeightHere - oldJointDupHeightHere;	//here is never there
 
-	//calculate stuff for reverse transition probability
+	// calculate stuff for reverse transition probability
 	vector<Node*> reverseFromVertices;
 	vector<Node*> reverseMovableNodes;
 	calculateFromVertices(CMM, invMap, s, !up, reverseFromVertices);
@@ -219,7 +222,7 @@ void SingleVertexMove::apply(CophyMultiMap& CMM, double T) {
 		cout << endl;
 	)
 
-	//accept/reject
+	// accept/reject
 	double MHProb = (up ? 0.5 : 2.0);
 	MHProb *= fromVertices.size();
 	MHProb /= reverseFromVertices.size();
@@ -237,8 +240,7 @@ void SingleVertexMove::apply(CophyMultiMap& CMM, double T) {
 		ec += CMM.countEvents();
 		CMM.setCurrentEventCount(ec);
 		DEBUG(cout << "SingleVertex move succeeded!" << endl;)
-	}
-	else {
+	} else {
 		//reject, move back
 		for (auto n : nodesToMove) {
 			CMM.getMap(n)->moveToHost(n, fromVertex, duplication);
