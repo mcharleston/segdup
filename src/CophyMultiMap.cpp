@@ -93,6 +93,7 @@ void CophyMultiMap::calcEventCount() {
 	Node *p, *h;
 	string description;
 	int nLosses;
+	currentEventCount.clear();
 	DEBUG(cout << "CophyMultiMap:calcEventCount()\n");
 	DEBUG(cout << *this);
 	DEBUG(cout << "1. Losses:" << endl);

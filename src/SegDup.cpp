@@ -688,6 +688,7 @@ void Algorithm2(CophyMultiMap& CMM, vector<DupMove*> moves, vector<double> probs
 	} else {
 		CMM.doPageReconciliation();
 	}
+	CMM.toCompactString(bestMMap);
 	DEBUG(cout << "Initial reconciliation complete:" << endl << CMM);
 
 	CMM.putAllMoveableNodes();
@@ -700,53 +701,61 @@ void Algorithm2(CophyMultiMap& CMM, vector<DupMove*> moves, vector<double> probs
 	}
 	ostringstream bestPrettyMap;
 	CMM.calcEventCount();
+	bestEventCount = CMM.countEvents();
+	bestCost = CSD(bestEventCount);
 
-	for (int t(1); t <= nSteps; ++t) {
-		int nullMoves(0);
-		EventCount ec;
-		T = (Tinitial-Tfinal)*(1.0 - (1.0 * (t-1.0) / nSteps)) + Tfinal;
+	DEBUG(cout << "number of movable nodes: " << CMM.getAllMoveableNodes().size() << endl);
 
-		SelectNextConfiguration(CMM, T, moves, probs);	// modifies CMM
-												
-		if (_showSampledDistribution) {
-			CMM.toCompactString(mapDescription);
-			EventCount totalEC = CMM.countEvents();
-			mapDescription += "-D" + to_string(totalEC.dups) + "L" + to_string(totalEC.losses);
-			(*sampledDistribution)[mapDescription] += 1;
-		}
+	if (CMM.getAllMoveableNodes().size() != 0) {
+		for (int t(1); t <= nSteps; ++t) {
+			int nullMoves(0);
+			EventCount ec;
+			T = (Tinitial-Tfinal)*(1.0 - (1.0 * (t-1.0) / nSteps)) + Tfinal;
 
-		ec = CMM.countEvents();
-		double cost = CSD(ec);
-		if (cost < bestCost) {
-			bestCost = cost;
-			DEBUG(cout << "Best cost = " << bestCost << endl);
-			bestEventCount = ec;
-			DEBUG(if (bestCost < 0) {
-				cout << "step " << t << ": best cost is NEGATIVE!" << endl;
-				cout << "\tbest cost = " << bestCost << endl;
-				cout << "\tbest event count = " << ec << endl;
+			//if (t == 2752238) 
+
+			SelectNextConfiguration(CMM, T, moves, probs);	// modifies CMM
+													
+			if (_showSampledDistribution) {
+				CMM.toCompactString(mapDescription);
+				EventCount totalEC = CMM.countEvents();
+				mapDescription += "-D" + to_string(totalEC.dups) + "L" + to_string(totalEC.losses);
+				(*sampledDistribution)[mapDescription] += 1;
+			}
+
+			ec = CMM.countEvents();
+			double cost = CSD(ec);
+			if (cost < bestCost) {
+				bestCost = cost;
+				DEBUG(cout << "Best cost = " << bestCost << endl);
+				bestEventCount = ec;
+				DEBUG(if (bestCost < 0) {
+					cout << "step " << t << ": best cost is NEGATIVE!" << endl;
+					cout << "\tbest cost = " << bestCost << endl;
+					cout << "\tbest event count = " << ec << endl;
+					bestPrettyMap.str("");
+					bestPrettyMap << CMM;
+					exit(-1);
+				});
+				CMM.toCompactString(bestMMap);
 				bestPrettyMap.str("");
 				bestPrettyMap << CMM;
-				exit(-1);
-			});
-			bestMMap = mapDescription;
-			bestPrettyMap.str("");
-			bestPrettyMap << CMM;
-			DEBUG(
-					cout << CMM << endl;
-			);
-		}
-
-		if (_saveTrace) {
-			if (t % outputInterval == 0) {
-//					ftrace << sampleNumber << ",\"" << mapDescription << "\"," << to_string(CSD(ec)) << endl;
-				ftrace << t << ',' << ec.codivs << ',' << ec.dups << ','
-					<< ec.losses << ',' << to_string(CSD(ec)) << ','
-					<< T
-					<< endl;
+				DEBUG(
+						cout << CMM << endl;
+				);
 			}
+
+			if (_saveTrace) {
+				if (t % outputInterval == 0) {
+	//					ftrace << sampleNumber << ",\"" << mapDescription << "\"," << to_string(CSD(ec)) << endl;
+					ftrace << t << ',' << ec.codivs << ',' << ec.dups << ','
+						<< ec.losses << ',' << to_string(CSD(ec)) << ','
+						<< T
+						<< endl;
+				}
+			}
+	//		DEBUG(cout << nei.getLabel() << '\t' << nei.getScore() << endl);
 		}
-//		DEBUG(cout << nei.getLabel() << '\t' << nei.getScore() << endl);
 	}
 	cout << endl;
 	if (_showSampledDistribution) {
@@ -762,6 +771,22 @@ void Algorithm2(CophyMultiMap& CMM, vector<DupMove*> moves, vector<double> probs
 	cout << bestMMap << '\t' << endl;
 	cout << bestEventCount << '\t' << bestCost << endl;
 	cout << hline << endl;
+
+	//some ybc debugging
+	
+	/*CMM.calcEventCount();
+	cout << CMM.countEvents() << endl;*/
+
+	/*Tree* s = CMM.getHostTree();
+	inversenodemap& invMap = CMM.getInverseMap();*/
+	/*for (Node* p : invMap[s->getRoot()]) {
+		CophyMap* M = CMM.getMap(p);
+		cout << p->getLabel() << '\t' << M->getDuplicationHeight(p) << endl;
+	}*/
+	/*for (auto v : s->getVertices()) {
+		cout << v.first << '\t' << CMM.calcCombinedDuplicationHeight(v.second) << endl;
+	}*/
+
 	if (_saveTrace) {
 		ftrace.close();
 	}
@@ -1237,7 +1262,7 @@ int main(int argn, char** argv) {
 	moves.push_back(new SingleVertexMove);
 	std::vector<double> probs;
 	probs.push_back(0.5);
-	//probs.push_back(0.1);
+	//probs.push_back(0.5);
 	probs.push_back(0.5);
 	Algorithm2(CMM, moves, probs, &sampledDistribution);
 
