@@ -94,7 +94,7 @@ void calculateMovableNodes(CophyMultiMap& CMM, inversenodemap& invMap, Node* fro
 }
 
 void SingleVertexMove::apply(CophyMultiMap& CMM, double T) {
-	bool _debugging(true);
+	bool _debugging(false);
 
 	DEBUG(cout << "Attempting single vertex move" << endl;)
 	DEBUG(string str; CMM.toCompactString(str); cout << str << endl;)

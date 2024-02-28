@@ -679,7 +679,7 @@ void Algorithm2(CophyMultiMap& CMM, vector<DupMove*> moves, vector<double> probs
 	double bestCost(1e100);	// 10^100 should be enough!!
 	string mapDescription;				
 
-	bool _debugging(true);
+	bool _debugging(false);
 	DEBUG(cout << hline << "Algorithm1" << endl << hline);
 	//DEBUG(cout << "Input multi-map:" << endl << CMM);
 	bool _doEarlyReconciliation(false);

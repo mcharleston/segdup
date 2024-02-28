@@ -5,9 +5,12 @@
  *      Author: mac
  */
 
+#include <stdexcept>
+
+#include <boost/range/adaptor/reversed.hpp>
+
 #include "../utility/debugging.h"
 #include "CophyMultiMap.h"
-#include <boost/range/adaptor/reversed.hpp>
 
 using namespace std;
 
@@ -25,7 +28,7 @@ int CophyMultiMap::calcCombinedDuplicationHeight(Node *h) {
 	 * XXX should not be re-counting for any node that hasn't moved
 	 *
 	 */
-	bool _debugging(true);
+	bool _debugging(false);
 	DEBUG(cout << "Calculating duplication height for host node " << h->getLabel() << endl);
 //	if (invMap.size() == 0) {
 		DEBUG(cout << "calculating inverse map since it is empty" << endl);
@@ -88,7 +91,7 @@ void CophyMultiMap::calcEventCount() {
 	/**
 	 *
 	 */
-	bool _debugging(true);
+	bool _debugging(false);
 	Tree *H;
 	Node *p, *h;
 	string description;
@@ -175,8 +178,12 @@ void CophyMultiMap::movePToHost(Node* p, Node *oldHost, Node *nuHost) {
 //	invMap[p].insert(nuHost);
 	bool _debugging(false);
 	DEBUG(cout << "movePToHost(" << p->getLabel() << "," << oldHost->getLabel() << "," << nuHost->getLabel() << ")" << endl);
-	invMap[oldHost].erase(p);
-	invMap[nuHost].insert(p);
+	try {
+		invMap[oldHost].erase(p);
+		invMap[nuHost].insert(p);
+	} catch (runtime_error& e) {
+
+	}
 	for (auto p : invMap[oldHost]) {
 		p->dupHeight = -1;
 	}
@@ -187,7 +194,7 @@ void CophyMultiMap::movePToHost(Node* p, Node *oldHost, Node *nuHost) {
 }
 
 void CophyMultiMap::doEarlyReconciliation() {
-	bool _debugging(true);
+	bool _debugging(false);
 	for (auto mpr : maps) {
 		CophyMap *Phi = mpr.second;
 		Phi->doEarlyReconciliation();
@@ -197,7 +204,7 @@ void CophyMultiMap::doEarlyReconciliation() {
 }
 
 void CophyMultiMap::doPageReconciliation() {
-	bool _debugging(true);
+	bool _debugging(false);
 	for (auto mpr : maps) {
 		CophyMap *Phi = mpr.second;
 		Phi->doPageReconciliation();

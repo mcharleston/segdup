@@ -30,7 +30,7 @@ SingleNodeMove::~SingleNodeMove() {
 }
 
 void SingleNodeMove::apply(CophyMultiMap& CMM, double T) {
-	bool _debugging(true);
+	bool _debugging(false);
 	int size = CMM.getAllMoveableNodes().size();
 	auto mpr = (CMM.getAllMoveableNodes())[iran(size)];	// pick at random from allMoveableNodes
 
@@ -144,7 +144,6 @@ void SingleNodeMove::apply(CophyMultiMap& CMM, double T) {
 //					cerr << t << ',' << T << ',' << p << ',' << con.getScore() << endl;
 		}
 		double d;
-		_debugging = true;
 		double total(0.0);
 		set<Contender> adjustedNeighbours;
 		for (auto nei : neighbours) {

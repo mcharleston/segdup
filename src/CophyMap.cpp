@@ -6,6 +6,7 @@
  */
 
 #include <assert.h>
+#include <stdexcept>
 #include <stdio.h>
 #include "../utility/appexception.h"
 #include "../utility/debugging.h"
@@ -38,7 +39,7 @@ CophyMap::CophyMap(const CophyMap &other) {
 std::set<pair<Node*, eventType>> CophyMap::calcAvailableNewHosts(Node* p) {
 	// can go up to same vertex to which parent is mapped, and down to the LCA of there the children are mapped.
 	//
-	bool _debugging(true);
+	bool _debugging(false);
 	DEBUG(cout << "Calculating available hosts for node " << p->getLabel() << ":" << endl);
 	std::set<pair<Node*, eventType>> avail;
 	Node* bottom;
@@ -91,7 +92,7 @@ int CophyMap::calcDuplicationHeight(Node *p) {
 	/**
 	 * Calculate and return the maximum height of any subtree of this parasite/gene tree on the same host/species node as p.
 	 */
-	bool _debugging(true);
+	bool _debugging(false);
 	Node* h = phi[p];
 	p->dupHeight = 0;
 	DEBUG(cout << "This host/species node (" << h->getLabel() << ") has " << invPhi[h].size() << " occupants." << endl);
@@ -203,7 +204,7 @@ std::string CophyMap::describeEvent(eventType e) {
 }
 
 void CophyMap::doEarlyReconciliation() {
-	bool _debugging(true);
+	bool _debugging(false);
 	DEBUG(cout << "doEarlyReconciliation" << endl);
 	Node* h = H->getRoot();
 	for (auto pr : P->getVertices()) {
@@ -288,14 +289,22 @@ bool CophyMap::isValid() {
 	// check all nodes in P are mapped to nodes in H
 	Node* image, *childimage;
 	for (Node* n = P->getRoot(); n != nullptr; n = n->next()) {
-		image = phi.at(n);
+		try {
+			image = phi.at(n);
+		} catch (runtime_error& e) {
+			cerr << e.what();
+		}
 		if (image->getTree() != H) {
 			cerr << "node n=" << n->getLabel() << " is not mapped to the correct tree " << H->getLabel() << endl;
 			return false;
 		}
 		// check no child node is mapped to a node earlier (closer to the root than) the image of the parent (no time travel!)
 		for (Node* c = n->getFirstChild(); c != nullptr; c = c->getSibling()) {
-			childimage = phi.at(c);
+			try {
+				childimage = phi.at(c);
+			} catch (runtime_error& e) {
+				cerr << e.what();
+			}
 			if (H->isAncestralTo(childimage, image)) {
 				cerr << "child node c=" << c->getLabel() << " is mapped ancestrally to its parent n=" << n->getLabel() << endl;
 				return false;
@@ -359,7 +368,7 @@ Node* CophyMap::mapToLCAofChildren(Node* p) {
 }
 
 void CophyMap::moveToHost(Node* p, Node *h) {
-	bool _debugging(true);
+	bool _debugging(false);
 	try {
 		// have to change the host of p stored in phi, the nodemap AND the inversenodemap
 		// first remove p from the inverseNodeMap of h:
