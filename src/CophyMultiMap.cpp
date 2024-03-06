@@ -182,7 +182,7 @@ void CophyMultiMap::movePToHost(Node* p, Node *oldHost, Node *nuHost) {
 		invMap[oldHost].erase(p);
 		invMap[nuHost].insert(p);
 	} catch (runtime_error& e) {
-
+		cerr << e.what();
 	}
 	for (auto p : invMap[oldHost]) {
 		p->dupHeight = -1;
