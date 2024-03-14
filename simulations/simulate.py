@@ -1,6 +1,7 @@
 from os import system
 from getopt import getopt
 import sys
+import time
 
 #directories
 segdupDir = "/home/yaoban/segdup/"
@@ -8,8 +9,8 @@ kowhaiDir = "/home/yaoban/software/kowhai/"
 multrecDir = "/home/yaoban/software/MultRec/Multrec/"
 
 #kowhai options
-nH = 15
-nP = 5
+nH = 20
+nP = 20
 rB = 1.0
 pC = 0.5
 pJ = 0.5
@@ -61,11 +62,15 @@ system("rm summary.csv")
 
 mrResults = []
 
+sdTime = []
+
 for r in range(replicates):
     #run programs
     system(kowhaiDir + "kowhai --sim -nH " + str(nH) + " -nP " + str(nP) + " -nR 1 -rB " + str(rB) + " -pC " + str(pC) + " -pJ " + str(pJ) + " --for-segdup --for-multrec --verbose > /dev/null")
     print("Running segdup...")
+    curTime = time.time()
     system("cat ./for-segdup-from-kowhai.txt | xargs " + segdupDir + "segdup -n " + str(iterations) + " -Tinit 10 -Tfinal 0.0 -d " + str(d) + " -l " + str(l) + " > /dev/null")
+    sdTime.append(time.time() - curTime)
 
     #system("cp ./for-segdup-from-kowhai.txt temp/fsfk-" + str(r) + ".txt")
 
@@ -74,7 +79,9 @@ for r in range(replicates):
     multrecFile.close()
 
     print("Running multrec...")
+    curTime = time.time()
     system(multrecDir + "Multrec -d " + str(d) + " -l " + str(l) + " " + multrecInput[:-3] + "\" -o multrec-output.txt")
+    mrTime = time.time() - curTime
 
     #parse multrec output
     multrecOutput = open("multrec-output.txt")
@@ -86,20 +93,20 @@ for r in range(replicates):
         elif line[1:-2] == "NBLOSSES":
             mrLosses = int(next(multrecOutput).rstrip())
             break
-    mrResults.append((mrDups,mrLosses,mrCost))
+    mrResults.append((mrDups,mrLosses,mrCost,mrTime))
     multrecOutput.close()
 
 f = open("summary.csv")
 output = open("results.csv", "w")
 
-output.write("nCospec,nIndividualDups,nAllDupEvents,nJointDups,nXtinc,nHostSwitch,nLineageSort,codivs,dups,losses,cost,mrDups,mrLosses,mrCost\n")
+output.write("nCospec,nIndividualDups,nAllDupEvents,nJointDups,nXtinc,nHostSwitch,nLineageSort,codivs,dups,losses,cost,sdTime,mrDups,mrLosses,mrCost,mrTime\n")
 
 rep = 0
 for line in f:
     kowhaiOutput = next(f).rstrip()
     next(f)
     segdupOutput = next(f).rstrip()
-    output.write(kowhaiOutput + segdupOutput + "," + ",".join([str(i) for i in mrResults[rep]]) + "\n")
+    output.write(kowhaiOutput + segdupOutput + "," + str(sdTime[rep]) + "," + ",".join([str(i) for i in mrResults[rep]]) + "\n")
     rep = rep + 1
 
 f.close()
