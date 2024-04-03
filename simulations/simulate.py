@@ -125,4 +125,4 @@ f.close()
 output.close()
 
 #clean
-#system("rm summary.csv multrec-output.txt")
+system("rm summary.csv multrec-output.txt")
