@@ -37,7 +37,7 @@ for opt, arg in opts:
     elif opt == "--kowhai-dir":
         kowhaiDir = arg
         if kowhaiDir[-1] != "\/":
-            kowhaiDir = segdupDir + "\/"
+            kowhaiDir = kowhaiDir + "\/"
     elif opt == "--multrec-dir":
         multrecDir = arg
         if multrecDir[-1] != "\/":
@@ -67,7 +67,7 @@ sdTime = []
 for r in range(replicates):
     #run programs
     system(kowhaiDir + "kowhai --sim -nH " + str(nH) + " -nP " + str(nP) + " -nR 1 -rB " + str(rB) + " -pC " + str(pC) + " -pJ " + str(pJ) + " --for-segdup --for-multrec --verbose > /dev/null")
-#    print("Running segdup...")
+    #print("Running segdup...")
     curTime = time.time()
     system("cat ./for-segdup-from-kowhai.txt | xargs " + segdupDir + "segdup -n " + str(iterations) + " -Tinit 10 -Tfinal 0.0 -d " + str(d) + " -l " + str(l) + " > /dev/null")
     sdTime.append(time.time() - curTime)
@@ -78,7 +78,7 @@ for r in range(replicates):
     multrecInput = multrecFile.readline()
     multrecFile.close()
 
-#    print("Running multrec...")
+    #print("Running multrec...")
     curTime = time.time()
     system(multrecDir + "Multrec -d " + str(d) + " -l " + str(l) + " " + multrecInput[:-3] + "\" -o multrec-output.txt")
     mrTime = time.time() - curTime
@@ -102,15 +102,27 @@ output = open("results.csv", "w")
 output.write("nCospec,nIndividualDups,nAllDupEvents,nJointDups,nXtinc,nHostSwitch,nLineageSort,codivs,dups,losses,cost,sdTime,mrDups,mrLosses,mrCost,mrTime\n")
 
 rep = 0
+headerRead = False
 for line in f:
-    kowhaiOutput = next(f).rstrip()
-    next(f)
+    if headerRead:
+        kowhaiOutput = line.rstrip()
+    else:
+        kowhaiOutput = next(f).rstrip()
+    segdupHeader = next(f).rstrip()
+
+    #check if failure
+    if segdupHeader[:6] != "codivs":
+        rep = rep + 1
+        headerRead = True
+        continue
+
     segdupOutput = next(f).rstrip()
     output.write(kowhaiOutput + segdupOutput + "," + str(sdTime[rep]) + "," + ",".join([str(i) for i in mrResults[rep]]) + "\n")
     rep = rep + 1
+    headerRead = False
 
 f.close()
 output.close()
 
 #clean
-system("rm summary.csv multrec-output.txt")
+#system("rm summary.csv multrec-output.txt")
