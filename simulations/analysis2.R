@@ -3,7 +3,7 @@ dat <- read.csv("allresults.csv", header=T)
 
 #default values (change nP to 20)
 nH <- 50
-nP <- 30
+nP <- 20
 rB <- 2
 pJ <- 0.5
 
