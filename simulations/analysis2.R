@@ -38,7 +38,7 @@ legend("topright", legend=c("segdup better","equal","segdup worse"), fill=c("red
 dev.off()
 
 #compare time to Multrec
-pdf("figures/nH-sdvmr-counts.pdf")
+pdf("figures/nH-sdvmr-time.pdf")
 plot(means$nH, means$sdTime, col="red", main="Time of segdup vs multrec", xlab="nH")
 points(means$nH, means$mrTime, col="blue")
 legend("topleft", legend=c("segdup","Multrec"), col=c("red","blue"), lty=1)
@@ -63,13 +63,13 @@ plot(means$nP, means$propSdCost, main="Proportional increase in cost of segdup v
 dev.off()
 
 #compare cost to Multrec - counts
-pdf("figures/nP-sdvmr-counts.pdf")
+pdf("figures/nP-sdvmr-.pdf")
 barplot(t(as.matrix(totals[,c("sdBetter","same","mrBetter")])), names.arg=means$nP, beside=T, col=c("red","green","blue"), main="Counts where segdup is better/equal/worse than multrec", xlab="nP")
 legend("topright", legend=c("segdup better","equal","segdup worse"), fill=c("red","green","blue"))
 dev.off()
 
 #compare time to Multrec
-pdf("figures/nP-sdvmr-counts.pdf")
+pdf("figures/nP-sdvmr-time.pdf")
 plot(means$nP, means$sdTime, col="red", main="Time of segdup vs multrec", xlab="nP")
 points(means$nP, means$mrTime, col="blue")
 legend("topleft", legend=c("segdup","Multrec"), col=c("red","blue"), lty=1)
@@ -100,7 +100,7 @@ legend("topright", legend=c("segdup better","equal","segdup worse"), fill=c("red
 dev.off()
 
 #compare time to Multrec
-pdf("figures/rB-sdvmr-counts.pdf")
+pdf("figures/rB-sdvmr-time.pdf")
 plot(means$rB, means$sdTime, col="red", main="Time of segdup vs multrec", xlab="rB")
 points(means$rB, means$mrTime, col="blue")
 legend("topleft", legend=c("segdup","Multrec"), col=c("red","blue"), lty=1)
@@ -131,7 +131,7 @@ legend("topright", legend=c("segdup better","equal","segdup worse"), fill=c("red
 dev.off()
 
 #compare time to Multrec
-pdf("figures/pJ-sdvmr-counts.pdf")
+pdf("figures/pJ-sdvmr-time.pdf")
 plot(means$pJ, means$sdTime, col="red", main="Time of segdup vs multrec", xlab="pJ")
 points(means$pJ, means$mrTime, col="blue")
 legend("topleft", legend=c("segdup","Multrec"), col=c("red","blue"), lty=1)
