@@ -1,4 +1,4 @@
-system("python3 process.py")
+#system("python3 process.py")
 dat <- read.csv("allresults.csv", header=T)
 
 #default values (change nP to 20)
@@ -63,7 +63,7 @@ plot(means$nP, means$propSdCost, main="Proportional increase in cost of segdup v
 dev.off()
 
 #compare cost to Multrec - counts
-pdf("figures/nP-sdvmr-.pdf")
+pdf("figures/nP-sdvmr-counts.pdf")
 barplot(t(as.matrix(totals[,c("sdBetter","same","mrBetter")])), names.arg=means$nP, beside=T, col=c("red","green","blue"), main="Counts where segdup is better/equal/worse than multrec", xlab="nP")
 legend("topright", legend=c("segdup better","equal","segdup worse"), fill=c("red","green","blue"))
 dev.off()
