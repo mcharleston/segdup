@@ -17,7 +17,7 @@ replicates=100
 nH=50
 #nP=20
 #for nH=20; do
-	for nP in {5,10,30,40,50}; do
+	for nP in {5,10,20,30,40,50}; do
 rB=2
 #		for rB in {1.0,2.0,3.0,4.0,5.0}; do
 pJ=0.5

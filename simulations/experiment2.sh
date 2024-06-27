@@ -12,17 +12,18 @@
 steps=10000
 replicates=100
 
-# EXPERIMENT 1
+# EXPERIMENT 2
 
 nH=50
 nP=20
 #for nH=20; do
 #	for nP in {20}; do
 		for rB in {1.0,2.0,3.0,4.0,5.0}; do
-			for pJ in {0.2,0.5,0.8,1}; do
+#			for pJ in {0.2,0.5,0.8,1}; do
+pJ=0.5
 				python simulate.py --nH $nH --nP $nP --rB $rB --pJ $pJ --replicates $replicates -i $steps
 				mv results.csv results-nH$nH-nP$nP-rB$rB-pJ$pJ.csv
-			done
+#			done
 		done
 #	done
 #done
