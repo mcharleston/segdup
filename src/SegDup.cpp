@@ -49,11 +49,13 @@ bool _cacheEventCounts(false);
 bool _silent(false);
 bool _outputProbabilities(false);
 bool _saveTrace(false);
+bool _saveFinal(false);
 bool _showSampledDistribution(false);
 int outputInterval(1);
 int nSteps(1000);
 double Tinitial(10.0);
 double Tfinal(0.0);
+int nFinal(0);
 
 extern std::mt19937 generator;
 extern unsigned seed;
@@ -707,10 +709,13 @@ void Algorithm2(CophyMultiMap& CMM, vector<DupMove*> moves, vector<double> probs
 	DEBUG(cout << "number of movable nodes: " << CMM.getAllMoveableNodes().size() << endl);
 
 	if (CMM.getAllMoveableNodes().size() != 0) {
-		for (int t(1); t <= nSteps; ++t) {
+		for (int t(1); t <= nSteps + nFinal; ++t) {
 			int nullMoves(0);
 			EventCount ec;
-			T = (Tinitial-Tfinal)*(1.0 - (1.0 * (t-1.0) / nSteps)) + Tfinal;
+			if (t <= nSteps)
+				T = (Tinitial-Tfinal)*(1.0 - (1.0 * (t-1.0) / nSteps)) + Tfinal;
+			else
+				T = Tfinal;
 
 			//if (t == 2752238) 
 
@@ -745,7 +750,7 @@ void Algorithm2(CophyMultiMap& CMM, vector<DupMove*> moves, vector<double> probs
 				);
 			}
 
-			if (_saveTrace) {
+			if (_saveTrace && (!_saveFinal || t > nSteps) ) {
 				if (t % outputInterval == 0) {
 	//					ftrace << sampleNumber << ",\"" << mapDescription << "\"," << to_string(CSD(ec)) << endl;
 					ftrace << t << ',' << ec.codivs << ',' << ec.dups << ','
@@ -1147,11 +1152,14 @@ string segdupHelp("SegDup Help:\n"
 		"\t-n <int>\n\t\tto supply the number of steps for Algorithm 1 (default value " + to_string(nSteps) + ")\n"
 		"\t-d <float>\n\t\tto set the duplication event cost (default value " + to_string(duplicationCost) + ")\n"
 		"\t-l <float>\n\t\tto set the loss event cost (default value " + to_string(lossCost) + ")\n"
-		"\t-o (samples|trace|interval <int>)\n"
+		"\t-o (samples|trace|interval <int>|final)\n"
 		"\t\tsamples to save the sampled distribution of maps (default value false)\n"
 		"\t\ttrace to save a trace of the progress of the search (default value false)\n"
+		"\t\tinterval to save only every few samples (default value 1)\n"
+		"\t\tfinal to save only at the final temperature (default value false)\n"
 		"\t-Tinit <float>\n\t\tto supply the initial temperature (default value " + to_string(Tinitial) + ")\n"
 		"\t-Tfinal <float>\n\t\tto supply the final temperature (default value " + to_string(Tfinal) + ")\n"
+		"\t-nfinal <float>\n\t\tto supply the number of steps at the final temperature (default value " + to_string(nFinal) + ")\n"
 		"\t--seed <int>\n\t\tto set the random number generator seed\n"
 	);
 int main(int argn, char** argv) {
@@ -1225,6 +1233,10 @@ int main(int argn, char** argv) {
 			++i;
 			Tfinal = atof(argv[i]);
 			cout << "Setting Final Temperature to " << Tfinal << endl;
+		} else if (!strcmp(argv[i], "-nfinal")) {
+			++i;
+			nFinal = atoi(argv[i]);
+			cout << "Setting Number of steps at final temperature to " << nFinal << endl;
 		} else if (!strcmp(argv[i], "-o")) {
 			++i;
 //			if (!strcmp(argv[i], "probs")) {
@@ -1238,9 +1250,13 @@ int main(int argn, char** argv) {
 				++i;
 				outputInterval = atoi(argv[i]);
 			} else if (!strcmp(argv[i], "trace")) {
-				cout << "Setting Save a Trace to true" << endl;
+				cout << "setting save a trace to true" << endl;
 				_saveTrace = true;
+			} else if (!strcmp(argv[i], "final")) {
+				cout << "Setting save at final temperature to true" << endl;
+				_saveFinal = true;
 			}
+
 		} else if (!strcmp(argv[i], "--seed")) {
 			++i;
 			seed = atoi(argv[i]);
