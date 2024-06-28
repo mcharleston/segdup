@@ -721,11 +721,13 @@ void Algorithm2(CophyMultiMap& CMM, vector<DupMove*> moves, vector<double> probs
 
 			SelectNextConfiguration(CMM, T, moves, probs);	// modifies CMM
 													
-			if (_showSampledDistribution) {
-				CMM.toCompactString(mapDescription);
-				EventCount totalEC = CMM.countEvents();
-				mapDescription += "-D" + to_string(totalEC.dups) + "L" + to_string(totalEC.losses);
-				(*sampledDistribution)[mapDescription] += 1;
+			if (_showSampledDistribution && (!_saveFinal || t > nSteps)) {
+				if (t % outputInterval == 0) {
+					CMM.toCompactString(mapDescription);
+					EventCount totalEC = CMM.countEvents();
+					mapDescription += "-D" + to_string(totalEC.dups) + "L" + to_string(totalEC.losses);
+					(*sampledDistribution)[mapDescription] += 1;
+				}
 			}
 
 			ec = CMM.countEvents();
