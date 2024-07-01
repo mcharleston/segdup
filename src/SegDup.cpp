@@ -717,6 +717,8 @@ void Algorithm2(CophyMultiMap& CMM, vector<DupMove*> moves, vector<double> probs
 			else
 				T = Tfinal;
 
+			if (t % 1000000 == 0)
+				cout << t << endl;
 			//if (t == 2752238) 
 
 			SelectNextConfiguration(CMM, T, moves, probs);	// modifies CMM
