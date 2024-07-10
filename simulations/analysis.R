@@ -1,4 +1,4 @@
-dat <- read.csv("results.csv", header=T)
+dat <- read.csv("results-nH40-nP30-rB2-pJ0.5.csv", header=T)
 
 d <- 10
 l <- 1

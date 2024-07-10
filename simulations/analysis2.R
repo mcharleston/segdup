@@ -39,7 +39,7 @@ dev.off()
 
 #compare time to Multrec
 pdf("figures/nH-sdvmr-time.pdf")
-plot(means$nH, means$sdTime, col="red", main="Time of segdup vs multrec", xlab="nH")
+plot(means$nH, means$sdTime, col="red", main="Time of segdup vs multrec", xlab="nH", ylim=c(min(means$sdTime,means$mrTime),max(means$sdTime,means$mrTime)))
 points(means$nH, means$mrTime, col="blue")
 legend("topleft", legend=c("segdup","Multrec"), col=c("red","blue"), lty=1)
 dev.off()
@@ -70,7 +70,7 @@ dev.off()
 
 #compare time to Multrec
 pdf("figures/nP-sdvmr-time.pdf")
-plot(means$nP, means$sdTime, col="red", main="Time of segdup vs multrec", xlab="nP")
+plot(means$nP, means$sdTime, col="red", main="Time of segdup vs multrec", xlab="nP", ylim=c(min(means$sdTime,means$mrTime),max(means$sdTime,means$mrTime)))
 points(means$nP, means$mrTime, col="blue")
 legend("topleft", legend=c("segdup","Multrec"), col=c("red","blue"), lty=1)
 dev.off()
@@ -101,7 +101,7 @@ dev.off()
 
 #compare time to Multrec
 pdf("figures/rB-sdvmr-time.pdf")
-plot(means$rB, means$sdTime, col="red", main="Time of segdup vs multrec", xlab="rB")
+plot(means$rB, means$sdTime, col="red", main="Time of segdup vs multrec", xlab="rB", ylim=c(min(means$sdTime,means$mrTime),max(means$sdTime,means$mrTime)))
 points(means$rB, means$mrTime, col="blue")
 legend("topleft", legend=c("segdup","Multrec"), col=c("red","blue"), lty=1)
 dev.off()
@@ -132,7 +132,7 @@ dev.off()
 
 #compare time to Multrec
 pdf("figures/pJ-sdvmr-time.pdf")
-plot(means$pJ, means$sdTime, col="red", main="Time of segdup vs multrec", xlab="pJ")
+plot(means$pJ, means$sdTime, col="red", main="Time of segdup vs multrec", xlab="pJ", ylim=c(min(means$sdTime,means$mrTime),max(means$sdTime,means$mrTime)))
 points(means$pJ, means$mrTime, col="blue")
 legend("topleft", legend=c("segdup","Multrec"), col=c("red","blue"), lty=1)
 dev.off()

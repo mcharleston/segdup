@@ -1,5 +1,5 @@
 trace <- read.csv("segdup-trace.csv")
 par(mfrow=c(1,2))
-plot(s ~ i, data = trace, type="l")
+plot(l ~ i, data = trace, type="l")
 plot(d ~ i, data = trace, type="l")
 #plot(t ~ i, data = trace, type="l")
