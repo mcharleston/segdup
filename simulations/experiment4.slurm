@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --nodes=1
-#SBATCH --ntasks=8
+#SBATCH --ntasks=3
 #SBATCH --time=0-48:00:00
 
 #explicitly put all parameters for repeatability
@@ -20,8 +20,29 @@ rB=2
 #		for rB in {1.0,2.0,3.0,4.0,5.0}; do
 pJ=0.5
 #			for pJ in {0.2,0.5,0.8,1}; do
-				python simulate.py --nH $nH --nP $nP --rB $rB --pJ $pJ --replicates $replicates -i $steps
-#				mv results.csv results-nH$nH-nP$nP-rB$rB-pJ$pJ.csv
+				mkdir results-nH$nH-nP$nP-rB$rB-pJ$pJ
+				cd results-nH$nH-nP$nP-rB$rB-pJ$pJ
+				python ../simulate.py --nH $nH --nP $nP --rB $rB --pJ $pJ --replicates $replicates -i $steps &
+				cd ..
+#			done
+#		done
+#	done
+done
+
+wait
+
+#nH=50
+nP=20
+for nH in {20,50,100}; do
+#	for nP in {20}; do
+rB=2
+#		for rB in {1.0,2.0,3.0,4.0,5.0}; do
+pJ=0.5
+#			for pJ in {0.2,0.5,0.8,1}; do
+				cd results-nH$nH-nP$nP-rB$rB-pJ$pJ
+				mv results.csv ../results-nH$nH-nP$nP-rB$rB-pJ$pJ.csv
+				cd ..
+				rm -rf results-nH$nH-nP$nP-rB$rB-pJ$pJ
 #			done
 #		done
 #	done
