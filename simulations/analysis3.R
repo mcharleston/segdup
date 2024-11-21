@@ -3,7 +3,8 @@ library(reshape2)
 theme_set(theme_bw(base_size=20))
 
 #system("python3 process.py")
-dat <- read.csv("allresults-long.csv", header=T)
+dat <- read.csv("allresults.csv", header=T)
+datlong <- read.csv("allresults-long.csv", header=T)
 
 #default values (change nP to 20)
 nH <- 50
@@ -22,13 +23,27 @@ dat$sdBetter <- dat$cost < dat$mrCost
 dat$same <- dat$cost == dat$mrCost
 dat$mrBetter <- dat$mrCost < dat$cost
 
+datlong$trueCost <- d*datlong$nAllDupEvents+l*datlong$nLineageSort
+
+datlong$propSdCost <- datlong$cost/datlong$mrCost
+datlong$propTrueCost <- datlong$cost/datlong$trueCost
+
+datlong$sdBetter <- datlong$cost < datlong$mrCost
+datlong$same <- datlong$cost == datlong$mrCost
+datlong$mrBetter <- datlong$mrCost < datlong$cost
+
 
 #varying nH
 nHdat <- dat[dat$nP==nP & dat$rB==rB & dat$pJ == pJ,]
+nHdatlong <- datlong[datlong$nP==nP & datlong$rB==rB & datlong$pJ == pJ,]
 
 totals <- aggregate(nHdat, by = list(nHdat$nH), FUN = sum)
 means <- aggregate(nHdat, by = list(nHdat$nH), FUN = mean)
 sds <- aggregate(nHdat, by = list(nHdat$nH), FUN = sd)/10
+
+ltotals <- aggregate(nHdatlong, by = list(nHdatlong$nH), FUN = sum)
+lmeans <- aggregate(nHdatlong, by = list(nHdatlong$nH), FUN = mean)
+lsds <- aggregate(nHdatlong, by = list(nHdatlong$nH), FUN = sd)/10
 
 #compare cost to Multrec - proportional increase
 #pdf("figures/nH-sdvmr-cost-long.pdf")
@@ -36,10 +51,14 @@ sds <- aggregate(nHdat, by = list(nHdat$nH), FUN = sd)/10
 #arrows(means$nH, means$propSdCost-2*sds$propSdCost, means$nH, means$propSdCost+2*sds$propSdCost, length=0.05, angle=90, code=3)
 #dev.off()
 
-pdf("figures/nH-sdvmr-cost-long.pdf")
-ggplot(data=means) + geom_point(aes(nH,propSdCost)) +
-	geom_errorbar(aes(nH,ymin=propSdCost-2*sds$propSdCost,ymax=propSdCost+2*sds$propSdCost)) + 
+pdf("figures/nH-sdvmr-cost-both.pdf")
+ggplot(data=means) + geom_point(aes(nH,propSdCost,col="black")) +
+	geom_errorbar(aes(nH,ymin=propSdCost-2*sds$propSdCost,ymax=propSdCost+2*sds$propSdCost),width=2) + 
+	geom_point(aes(nH,lmeans$propSdCost,col="red")) +
+	geom_errorbar(aes(nH,ymin=lmeans$propSdCost-2*lsds$propSdCost,ymax=lmeans$propSdCost+2*lsds$propSdCost),col="red",width=2) + 
 	scale_x_continuous(breaks=seq(0,100,by=20)) +
+	scale_colour_manual(values = c('black','red'), labels = c('10^4 iterations','10^5 iterations')) +
+	theme(legend.title=element_blank(), legend.position = c(.95, .95), legend.justification = c("right", "top"), legend.box.just = "right", legend.margin = margin(6, 6, 6, 6)) +
 	xlab("nH") + ylab("Proportional cost")
 dev.off()
 
@@ -85,10 +104,15 @@ dev.off()
 
 #varying nP
 nPdat <- dat[dat$nH==nH & dat$rB==rB & dat$pJ == pJ,]
+nPdatlong <- datlong[datlong$nH==nH & datlong$rB==rB & datlong$pJ == pJ,]
 
 totals <- aggregate(nPdat, by = list(nPdat$nP), FUN = sum)
 means <- aggregate(nPdat, by = list(nPdat$nP), FUN = mean)
 sds <- aggregate(nPdat, by = list(nPdat$nP), FUN = sd)/10
+
+ltotals <- aggregate(nPdatlong, by = list(nPdatlong$nP), FUN = sum)
+lmeans <- aggregate(nPdatlong, by = list(nPdatlong$nP), FUN = mean)
+lsds <- aggregate(nPdatlong, by = list(nPdatlong$nP), FUN = sd)/10
 
 #compare cost to Multrec - proportional increase
 pdf("figures/nP-sdvmr-cost-long.pdf")
@@ -96,34 +120,62 @@ plot(means$nP, means$propSdCost, main="Proportional increase in cost of segdup v
 arrows(means$nP, means$propSdCost-2*sds$propSdCost, means$nP, means$propSdCost+2*sds$propSdCost, length=0.05, angle=90, code=3)
 dev.off()
 
+pdf("figures/nP-sdvmr-cost-both.pdf")
+ggplot(data=means) + geom_point(aes(nP,propSdCost,col="black")) +
+	geom_errorbar(aes(nP,ymin=propSdCost-2*sds$propSdCost,ymax=propSdCost+2*sds$propSdCost),width=2) + 
+	geom_point(aes(nP,lmeans$propSdCost,col="red")) +
+	geom_errorbar(aes(nP,ymin=lmeans$propSdCost-2*lsds$propSdCost,ymax=lmeans$propSdCost+2*lsds$propSdCost),col="red",width=2) + 
+	scale_x_continuous(breaks=seq(0,100,by=10)) +
+	scale_colour_manual(values = c('black','red'), labels = c('10^4 iterations','10^5 iterations')) +
+	theme(legend.title=element_blank(), legend.position = c(.05, .95), legend.justification = c("left", "top"), legend.box.just = "right", legend.margin = margin(6, 6, 6, 6)) +
+	xlab("nP") + ylab("Proportional cost")
+dev.off()
+
 #compare cost to Multrec - counts
 pdf("figures/nP-sdvmr-counts-long.pdf")
-barplot(t(as.matrix(totals[,c("sdBetter","same","mrBetter")])), names.arg=means$nP, beside=T, col=c("red","green","blue"), main="Counts where segdup is better/equal/worse than multrec", xlab="nP")
+
+barplot(t(as.matrix(totals[,c("sdBetter","same","mrBetter")])), names.arg=means$nP, beside=F, col=c("red","green","blue"), main="Counts where segdup is better/equal/worse than multrec", xlab="nP")
 legend("topright", legend=c("segdup better","equal","segdup worse"), fill=c("red","green","blue"))
+
+dev.off()
+
+pdf("figures/nP-sdvmr-counts-both.pdf")
+barplot(t(as.matrix(cbind(totals[,c("sdBetter","mrBetter")],ltotals[,c("sdBetter","mrBetter")]))), names.arg=means$nP, beside=T, col=c("red","blue"), density = c(50,50,1000,1000), main="Counts where segdup is better/equal/worse than multrec", xlab="nP")
+legend("topleft", legend=c("segdup better (10^4)","segdup worse (10^4)","segdup better (10^5)","segdup worse (10^5)"), fill=c("red","blue"), density= c(50,50,1000,1000))
 dev.off()
 
 #compare time to Multrec
-pdf("figures/nP-sdvmr-time-long.pdf")
-plot(means$nP, means$sdTime, col="red", main="Time of segdup vs multrec", xlab="nP", ylim=c(min(means$sdTime-2*sds$sdTime,means$mrTime),max(means$sdTime+2*sds$sdTime,means$mrTime)))
-arrows(means$nP, means$sdTime-2*sds$sdTime, means$nP, means$sdTime+2*sds$sdTime, length=0.05, angle=90, code=3, col="red")
+pdf("figures/nP-sdvmr-time-both.pdf")
+plot(means$nP, means$sdTime, main="Time of segdup vs multrec", xlab="nP", ylim=c(0,max(lmeans$sdTime+2*lsds$sdTime,lmeans$mrTime)))
+arrows(means$nP, means$sdTime-2*sds$sdTime, means$nP, means$sdTime+2*sds$sdTime, length=0.05, angle=90, code=3)
+points(lmeans$nP, lmeans$sdTime, col="red")
+arrows(lmeans$nP, lmeans$sdTime-2*lsds$sdTime, lmeans$nP, lmeans$sdTime+2*lsds$sdTime, length=0.05, angle=90, code=3, col="red")
 points(means$nP, means$mrTime, col="blue")
 arrows(means$nP, means$mrTime-2*sds$mrTime, means$nP, means$mrTime+2*sds$mrTime, length=0.05, angle=90, code=3, col="blue")
-legend("topleft", legend=c("segdup","Multrec"), col=c("red","blue"), lty=1)
+legend("topleft", legend=c("segdup (10^4)","segdup (10^5)","Multrec"), col=c("black","red","blue"), lty=1)
 dev.off()
 
 #compare cost to true reconciliation
-pdf("figures/nP-sdvtr-cost-long.pdf")
-plot(means$nP, means$propTrueCost, main="Proportional decrease in cost of segdup vs true", xlab="nP", ylim=c(min(means$propTrueCost-2*sds$propTrueCost),max(means$propTrueCost+2*sds$propTrueCost)))
+pdf("figures/nP-sdvtr-cost-both.pdf")
+plot(means$nP, means$propTrueCost, main="Proportional decrease in cost of segdup vs true", xlab="nP", ylim=c(min(lmeans$propTrueCost-2*lsds$propTrueCost),max(means$propTrueCost+2*sds$propTrueCost)))
 arrows(means$nP, means$propTrueCost-2*sds$propTrueCost, means$nP, means$propTrueCost+2*sds$propTrueCost, length=0.05, angle=90, code=3)
+points(lmeans$nP, lmeans$propTrueCost,col="red")
+arrows(lmeans$nP, lmeans$propTrueCost-2*lsds$propTrueCost, lmeans$nP, lmeans$propTrueCost+2*lsds$propTrueCost, length=0.05, angle=90, code=3, col="red")
+legend("topright", legend=c("segdup (10^4)","segdup (10^5)"), col=c("black","red"), lty=1)
 dev.off()
 
 
 #varying rB
 rBdat <- dat[dat$nH==nH & dat$nP==nP & dat$pJ == pJ,]
+rBdatlong <- datlong[datlong$nH==nH & datlong$nP==nP & datlong$pJ == pJ,]
 
 totals <- aggregate(rBdat, by = list(rBdat$rB), FUN = sum)
 means <- aggregate(rBdat, by = list(rBdat$rB), FUN = mean)
 sds <- aggregate(rBdat, by = list(rBdat$rB), FUN = sd)/10
+
+ltotals <- aggregate(rBdatlong, by = list(rBdatlong$rB), FUN = sum)
+lmeans <- aggregate(rBdatlong, by = list(rBdatlong$rB), FUN = mean)
+lsds <- aggregate(rBdatlong, by = list(rBdatlong$rB), FUN = sd)/10
 
 #compare cost to Multrec - proportional increase
 pdf("figures/rB-sdvmr-cost-long.pdf")
@@ -131,10 +183,23 @@ plot(means$rB, means$propSdCost, main="Proportional increase in cost of segdup v
 arrows(means$rB, means$propSdCost-2*sds$propSdCost, means$rB, means$propSdCost+2*sds$propSdCost, length=0.05, angle=90, code=3)
 dev.off()
 
+pdf("figures/rB-sdvmr-cost-both.pdf")
+plot(means$rB, means$propSdCost, main="Proportional increase in cost of segdup vs multrec", xlab="rB", ylim=c(min(lmeans$propSdCost-2*lsds$propSdCost),max(means$propSdCost+2*sds$propSdCost)))
+arrows(means$rB, means$propSdCost-2*sds$propSdCost, means$rB, means$propSdCost+2*sds$propSdCost, length=0.05, angle=90, code=3)
+points(lmeans$rB, lmeans$propSdCost, col="red")
+arrows(lmeans$rB, lmeans$propSdCost-2*lsds$propSdCost, lmeans$rB, lmeans$propSdCost+2*lsds$propSdCost, length=0.05, angle=90, code=3, col="red")
+legend("topleft", legend=c("segdup (10^4)","segdup (10^5)"), col=c("black","red"), lty=1)
+dev.off()
+
 #compare cost to Multrec - counts
 pdf("figures/rB-sdvmr-counts-long.pdf")
 barplot(t(as.matrix(totals[,c("sdBetter","same","mrBetter")])), names.arg=means$rB, beside=T, col=c("red","green","blue"), main="Counts where segdup is better/equal/worse than multrec", xlab="rB")
 legend("topright", legend=c("segdup better","equal","segdup worse"), fill=c("red","green","blue"))
+dev.off()
+
+pdf("figures/rB-sdvmr-counts-both.pdf")
+barplot(t(as.matrix(cbind(totals[1:4,c("sdBetter","mrBetter")],ltotals[,c("sdBetter","mrBetter")]))), names.arg=lmeans$rB, beside=T, col=c("red","blue"), density = c(50,50,1000,1000), main="Counts where segdup is better/equal/worse than multrec", xlab="rB")
+legend("topleft", legend=c("segdup better (10^4)","segdup worse (10^4)","segdup better (10^5)","segdup worse (10^5)"), fill=c("red","blue"), density= c(50,50,1000,1000))
 dev.off()
 
 #compare time to Multrec
@@ -146,10 +211,28 @@ arrows(means$rB, means$mrTime-2*sds$mrTime, means$rB, means$mrTime+2*sds$mrTime,
 legend("topleft", legend=c("segdup","Multrec"), col=c("red","blue"), lty=1)
 dev.off()
 
+pdf("figures/rB-sdvmr-time-both.pdf")
+plot(means$rB, means$sdTime, main="Time of segdup vs multrec", xlab="rB", ylim=c(0,max(lmeans$sdTime+2*lsds$sdTime,means$mrTime)))
+arrows(means$rB, means$sdTime-2*sds$sdTime, means$rB, means$sdTime+2*sds$sdTime, length=0.05, angle=90, code=3)
+points(lmeans$rB, lmeans$sdTime, col="red")
+arrows(lmeans$rB, lmeans$sdTime-2*lsds$sdTime, lmeans$rB, lmeans$sdTime+2*lsds$sdTime, length=0.05, angle=90, code=3, col="red")
+points(means$rB, means$mrTime, col="blue")
+arrows(means$rB, means$mrTime-2*sds$mrTime, means$rB, means$mrTime+2*sds$mrTime, length=0.05, angle=90, code=3, col="blue")
+legend("topleft", legend=c("segdup (10^4)","segdup (10^5)","Multrec"), col=c("black","red","blue"), lty=1)
+dev.off()
+
 #compare cost to true reconciliation
 pdf("figures/rB-sdvtr-cost-long.pdf")
 plot(means$rB, means$propTrueCost, main="Proportional decrease in cost of segdup vs true", xlab="rB", ylim=c(min(means$propTrueCost-2*sds$propTrueCost),max(means$propTrueCost+2*sds$propTrueCost)))
 arrows(means$rB, means$propTrueCost-2*sds$propTrueCost, means$rB, means$propTrueCost+2*sds$propTrueCost, length=0.05, angle=90, code=3)
+dev.off()
+
+pdf("figures/rB-sdvtr-cost-both.pdf")
+plot(means$rB, means$propTrueCost, main="Proportional decrease in cost of segdup vs true", xlab="rB", ylim=c(min(lmeans$propTrueCost-2*lsds$propTrueCost),max(means$propTrueCost+2*sds$propTrueCost)))
+arrows(means$rB, means$propTrueCost-2*sds$propTrueCost, means$rB, means$propTrueCost+2*sds$propTrueCost, length=0.05, angle=90, code=3)
+points(lmeans$rB, lmeans$propTrueCost,col="red")
+arrows(lmeans$rB, lmeans$propTrueCost-2*lsds$propTrueCost, lmeans$rB, lmeans$propTrueCost+2*lsds$propTrueCost, length=0.05, angle=90, code=3, col="red")
+legend("topleft", legend=c("segdup (10^4)","segdup (10^5)"), col=c("black","red"), lty=1)
 dev.off()
 
 
