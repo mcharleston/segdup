@@ -156,7 +156,7 @@ void SingleVertexMove::apply(CophyMultiMap& CMM, double T) {
 
 	// choose number of nodes to move
 	int movableNodesSize = movableNodes.size();
-	int choose = iran((movableNodesSize*(movableNodesSize-1))/2);
+	int choose = iran((movableNodesSize*(movableNodesSize+1)-2)/2);
 	int numberToMove = 2;
 	while (choose >= numberToMove) {
 		choose -= numberToMove;
@@ -226,13 +226,13 @@ void SingleVertexMove::apply(CophyMultiMap& CMM, double T) {
 	double MHProb = (up ? 0.5 : 2.0);
 	MHProb *= fromVertices.size();
 	MHProb /= reverseFromVertices.size();
-	MHProb *= movableNodesSize*(movableNodesSize-1);
-	MHProb /= reverseMovableNodes.size()*(reverseMovableNodes.size()-1);
+	MHProb *= movableNodesSize*(movableNodesSize+1)-2;
+	MHProb /= reverseMovableNodes.size()*(reverseMovableNodes.size()+1)-2;
 	MHProb *= binom(movableNodesSize, numberToMove);
 	MHProb /= binom(reverseMovableNodes.size(), numberToMove);
 	MHProb *= exp(-CSD(ec)/T);
 
-	DEBUG(cout << "M-H probability = " << (up ? 0.5 : 2.0) << " * " << fromVertices.size() << " / " << reverseFromVertices.size() << " * " << movableNodesSize*(movableNodesSize-1) << " / " << reverseMovableNodes.size()*(reverseMovableNodes.size()-1) << " * " << binom(movableNodesSize, numberToMove) << " / " << binom(reverseMovableNodes.size(), numberToMove) << " * " << exp(-CSD(ec)/T) << endl;)
+	DEBUG(cout << "M-H probability = " << (up ? 0.5 : 2.0) << " * " << fromVertices.size() << " / " << reverseFromVertices.size() << " * " << movableNodesSize*(movableNodesSize+1)-2 << " / " << reverseMovableNodes.size()*(reverseMovableNodes.size()+1)-2 << " * " << binom(movableNodesSize, numberToMove) << " / " << binom(reverseMovableNodes.size(), numberToMove) << " * " << exp(-CSD(ec)/T) << endl;)
 	DEBUG(cout << "M-H probability = " << MHProb << endl;)
 	
 	if (dran(1) < MHProb) {
