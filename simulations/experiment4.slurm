@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --nodes=1
-#SBATCH --ntasks=3
+#SBATCH --ntasks=10
 #SBATCH --time=0-48:00:00
 
 #explicitly put all parameters for repeatability
@@ -14,7 +14,7 @@ replicates=100
 
 #nH=50
 nP=20
-for nH in {20,50,100}; do
+for nH in {10,20,30,40,50,60,70,80,90,100}; do
 #	for nP in {20}; do
 rB=2
 #		for rB in {1.0,2.0,3.0,4.0,5.0}; do
@@ -33,7 +33,7 @@ wait
 
 #nH=50
 nP=20
-for nH in {20,50,100}; do
+for nH in {10,20,30,40,50,60,70,80,90,100}; do
 #	for nP in {20}; do
 rB=2
 #		for rB in {1.0,2.0,3.0,4.0,5.0}; do

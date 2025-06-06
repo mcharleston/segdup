@@ -21,7 +21,7 @@ nH=50
 nP=20
 #for nH=20; do
 #	for nP in {20}; do
-		for rB in {1.0,2.0,3.0,4.0,5.0}; do
+		for rB in {1,2,3,4,5}; do
 #			for pJ in {0.2,0.5,0.8,1}; do
 pJ=0.5
 				mkdir results-nH$nH-nP$nP-rB$rB-pJ$pJ
@@ -39,7 +39,7 @@ nH=50
 nP=20
 #for nH=20; do
 #	for nP in {20}; do
-		for rB in {1.0,2.0,3.0,4.0,5.0}; do
+		for rB in {1,2,3,4,5}; do
 #			for pJ in {0.2,0.5,0.8,1}; do
 pJ=0.5
 				cd results-nH$nH-nP$nP-rB$rB-pJ$pJ
