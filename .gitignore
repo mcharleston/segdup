@@ -36,18 +36,23 @@
 /Release/
 /Debug/
 /QuickCompile/
-/Test/
-.Rproj.user
-/experiments/
-/analysis/
+/.cproject
+/.project
 /.RData
 /.Rhistory
-/best-map-found.txt
-/for-segdup-from-kowhai-h100.txt
-/interesting-testcase.txt
-/perf.data
-/segdup-samples.csv
+/segdupoutput-case7.txt
 /segdup-trace.csv
-/testing.txt
-/trace1.csv
-/.gitignore
+/segdupoutput-tuesday.txt
+/GuidoEtalTest.txt
+/GuidoEtalTest2.txt
+/numbers-only-trace.csv
+/segdup-trace-function5-logpow.csv
+/log.txt
+
+# Output and other text files
+*.txt
+*.csv
+
+# Local Settings
+/.cproject
+/.settings/language.settings.xml
