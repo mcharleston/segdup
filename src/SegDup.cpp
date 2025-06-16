@@ -35,7 +35,7 @@ bool _debugging(true);
 bool _silent(false);
 bool _outputProbabilities(false);
 bool _saveTrace(false);
-bool _showSampledDistribution(false);
+bool _saveSampledDistribution(false);
 bool _verbose(false);
 int nSteps(1000);
 double Tinitial(0.1);
@@ -317,25 +317,25 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 	CMM.doPageReconciliation();
 
 	DEBUG(cout << "Initial reconciliation complete:" << endl << CMM);
-//	DEBUG(for (auto mpr : CMM.getMaps()) {
-//		CophyMap* M = mpr.second;
-//		cout << M->getParasiteTree()->getLabel() << " event counts: " << M->countEvents() << endl;
-//	});
+	DEBUG(for (auto mpr : CMM.getMaps()) {
+		CophyMap* M = mpr.second;
+		cout << M->getParasiteTree()->getLabel() << " event counts: " << M->countEvents() << endl;
+	});
 
-//	DEBUG(cout << "total event counts: " << CMM.countEvents() << endl);
+	DEBUG(cout << "total event counts: " << CMM.countEvents() << endl);
 	CophyMultiMap nuMM(CMM);
 	map<CophyMap*, set<Node*>> iV;	// internal vertices of each parasite / gene tree
 	for (auto mpr : CMM.getMaps()) {
-		CophyMap* M = mpr.second;string segdupHelp("SegDup Help:\n"
-				"\t>./segdup -[hvDn]");
+		CophyMap* M = mpr.second;
+//		string segdupHelp("SegDup Help:\n\t>./segdup -[hvDn]");
 		Tree* G = M->getParasiteTree();
 		G->putInternalVertices(iV[M]);
-//		DEBUG(cout << "Tree " << G->getLabel() << " has internal vertices { ";
-//			for (Node* n : iV[M]) {
-//				cout << n->getLabel() << " ";
-//			}
-//			cout << "}" << endl;
-//		);
+		DEBUG(cout << "Tree " << G->getLabel() << " has internal vertices { ";
+			for (Node* n : iV[M]) {
+				cout << n->getLabel() << " ";
+			}
+			cout << "}" << endl;
+		);
 	}
 
 	double T(0.0);
@@ -343,53 +343,51 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 	double fudgeFactor(100.0);
 	std::set<Contender> neighbours;
 	EventCount ecoriginal = CMM.countEvents();
-	cout << "initCodiv,initDups,initLosses,initCost" << endl;
-	cout << ecoriginal.codivs << ','
-			<< ecoriginal.dups << ','
-			<< ecoriginal.losses << ','
-			<< CSD(ecoriginal) << endl;
-
 	string mapDescription;
 	CMM.toCompactString(mapDescription);
 	if (_verbose) {
 		cout << "ORIGINAL MAP:" << endl << CMM << "Events\tScore\tMap\n" << ecoriginal
 			<< '\t' << CSD(ecoriginal) << '\t' << mapDescription << endl;
 	}
+	if (!_silent) {
+		cout << "Initial event counts and cost:\ninitCodiv,initDups,initLosses,initCost" << endl;
+		cout << ecoriginal.codivs << ','
+				<< ecoriginal.dups << ','
+				<< ecoriginal.losses << ','
+				<< CSD(ecoriginal) << endl;
+	}
 	string bestMMap;
 	EventCount bestEventCount(ecoriginal);
 	double bestCost(CSD(ecoriginal));	// 10^100 should be enough!!
 	ofstream ftrace;
+	ofstream fsamples;
 	int sampleNumber(0);
 	if (_saveTrace) {
 		ftrace.open("segdup-trace.csv", std::ofstream::out);
 		ftrace << "i,T,dups,losses,csd\n";
 	}
+	if (_saveSampledDistribution) {
+		fsamples.open("segdup-samples.txt", std::ofstream::out);
+	}
 	ostringstream bestPrettyMap;
-
-	bool _showDistribution(false);
+	bestPrettyMap << CMM;
 
 	EventCount ec, oldEC;
 	int noChangeInHeights(0), heightsChanged(0);
+	if (_verbose) {
+		cout << "Progress:\nstep,nCospec,nSegDup,nLoss,cost" << endl;
+	}
 	for (int t(0); t < nSteps; ++t) {
 		DEBUG(cout << hline << "t = " << t << endl << hline << endl);
 		int nullMoves(0);
 		T = Tinitial*(1.0 - (1.0 * t / nSteps)); // function 0 / linear
-//		T = Tinitial*(1.0 - (1.0 * t / nSteps))*(1.0 - (1.0 * t / nSteps)); // function 1 / linear2
-//		double x = 1.0 * t / nSteps;
-//		double tempParam(2.5);
-//		T = Tinitial*(exp(-tempParam * x * x * x));	// function 2 / exp3	// XXX not very good on ybc-case3
-//		T = Tinitial*(1.0/(1-sqrt(2)))*(1-sqrt(1.0 + 1.0/(1.0 +tempParam * x * x * x))); // function 3 / sqrts // XXX not very good on ybc-case3
-//		T = Tinitial*1.5/(1.0 + 0.2 * sqrt(x*x*t+1.0));	// function 4 / sqrts	// XXX looks good on ybc-case3 and on Guido et al..
-//		double paramA(4.4);
-//		double paramB(400.0);
-//		T = Tinitial*(1.0 / (1.0 + log(1 + pow(t/SATempSpread, SATempDecay)))); // function 5 / logpow
 		double total(0.0);
 		neighbours.clear();
 		oldEC = CMM.countEvents();
 		ec = oldEC;
 		for (auto mpr : CMM.getMaps()) {
 			CophyMap* M = mpr.second;
-//			DEBUG(cout << hline << "ORIGINAL MAP:" << (*M));
+			DEBUG(cout << hline << "ORIGINAL MAP:" << (*M));
 			for (Node* p : iV[M]) {
 				set<pair<Node*, eventType>> nextImages = M->calcAvailableNewHosts(p);
 				DEBUG(
@@ -400,13 +398,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					cout << "}" << endl
 				);
 				for (auto a : nextImages) {
-//					DEBUG(cout << "***" << endl);
 					if (a.first == M->getHost(p) && a.second == M->getEvent(p)) {
-//						DEBUG(cout << "No change: " << p->getLabel() << " staying on " << a.first->getLabel() << endl);
-//						DEBUG(cout << "Combined event counts: " << ecoriginal << "; cost = " << CSD(ecoriginal) << endl);
-//						DEBUG(cout << "Probability of sampling proportional to: " << exp(-CSD(ecoriginal) / T) << endl);
-
-//						ec = oldEC;//CMM.countEvents();	// XXX should just use the old one but if I do, it all breaks!
 						double score = exp(-CSD(ec) / ( fudgeFactor * T));
 						Contender noChange( score, p, a.first, a.second, M );
 
@@ -414,11 +406,9 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 						noChange.setLabel("leaving " + p->getLabel() + " on [" + eventSymbol[a.second] + "]" + a.first->getLabel());
 
 						neighbours.insert(noChange);
-//						DEBUG(cout << "Adding a noChange move: " << noChange << endl);
 						++nullMoves;
 						continue;
 					}
-//					DEBUG(cout << "Testing moving " << p->getLabel() << " to host " << eventSymbol[a.second] << a.first->getLabel() << endl);
 					Node* oldHost = M->getHost(p);
 					eventType oldEvent = M->getEvent(p);
 					int oldSourceDuplicationHeight = CMM.calcDuplicationHeight(oldHost);
@@ -429,18 +419,19 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 					// do something here about checking the heights...
 					if ((oldSourceDuplicationHeight != CMM.calcDuplicationHeight(oldHost)) ||
 							(oldTargetDuplicationHeight != CMM.calcDuplicationHeight(a.first))) {
-//						cout << CMM;
-//						cout << "p moving " << p->getLabel() << endl;
-//						cout << "old host: " << oldHost->getLabel() << endl;
-//						cout << "new host: " << a.first->getLabel() << endl;
-//						cout << "old event: " << M->describeEvent(oldEvent) << endl;
-//						cout << "new event: " << M->describeEvent(a.second) << endl;
-//						cout << "oldSourceDuplicationHeight = " << oldSourceDuplicationHeight << endl;
-//						cout << "oldTargetDuplicationHeight = " << oldTargetDuplicationHeight << endl;
-//						cout << "new height for previous host = " << CMM.calcDuplicationHeight(oldHost) << endl;
-//						cout << "new height for new host = " << CMM.calcDuplicationHeight(a.first) << endl;
+						DEBUG(
+							cout << CMM;
+							cout << "p moving " << p->getLabel() << endl;
+							cout << "old host: " << oldHost->getLabel() << endl;
+							cout << "new host: " << a.first->getLabel() << endl;
+							cout << "old event: " << M->describeEvent(oldEvent) << endl;
+							cout << "new event: " << M->describeEvent(a.second) << endl;
+							cout << "oldSourceDuplicationHeight = " << oldSourceDuplicationHeight << endl;
+							cout << "oldTargetDuplicationHeight = " << oldTargetDuplicationHeight << endl;
+							cout << "new height for previous host = " << CMM.calcDuplicationHeight(oldHost) << endl;
+							cout << "new height for new host = " << CMM.calcDuplicationHeight(a.first) << endl;
+						);
 						++heightsChanged;
-//						return;
 						ec = CMM.countEvents();
 					} else {
 						++noChangeInHeights;
@@ -451,8 +442,6 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 						CMM.toCompactString(mapDescription);
 						CMM.storeEventCount(mapDescription, ec);
 					}
-					// XXX I just CANNOT work out why this isn't working. I'm going to have to leave it until I've had more sleep, and just run simulations the slow way.
-					// XXX Fix after grant application goes in, perhaps.
 //					ec = CMM.countEvents();
 					/**
 					 * SPEEDUP ideas:
@@ -485,7 +474,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //				DEBUG(cout << "total score = " << total << endl);
 //				DEBUG(cout << "Summary of sampling options, events & costs:" << endl);
 //				for (auto nei : neighbours) {
-//					DEBUG(cout << "\t" << nei.getLabel() //<< " " <<  nei.getParasite()->getLabel() << ':' << nei.getHost()->getLabel()
+//					DEBUG(cout << "\t" << nei.getLabel() //_outputProbabilities<< " " <<  nei.getParasite()->getLabel() << ':' << nei.getHost()->getLabel()
 //							<< " has cost " << nei.getScore() << endl);
 //				}
 //				DEBUG(cout << '\t' << nullMoves << " null moves with cost " << CSD(ecoriginal) << endl);
@@ -506,7 +495,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 		if (neighbours.size() == 0) {
 			throw new app_exception("No neighbours at all!!");
 		}
-		// XXX memory leak happening in this bit:
+		// TODO check potential memory leak happening in this bit:
 		for (auto nei : neighbours) {
 			DEBUG(cout << "This neighbour has score " << nei.getScore() << endl);
 			if (r <= nei.getScore()) {
@@ -521,7 +510,7 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //							DEBUG(cout << t << '\t' << nei.getLabel() << endl);
 				}
 				CMM.toCompactString(mapDescription);
-				if (_showDistribution) {
+				if (_saveSampledDistribution) {
 					sampledDistribution[mapDescription] += 1;
 				}
 				ec = CMM.getEventCount(mapDescription);
@@ -537,7 +526,6 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 				if (_saveTrace) {
 					++sampleNumber;
 					ftrace << sampleNumber << ',';
-//					ftrace << mapDescription << "\",";
 					ftrace << T << ',';
 					ftrace << ec.dups << ',';
 					ftrace << ec.losses << ',';
@@ -557,23 +545,24 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 		}
 		oldEC = ec;
 	}
-	if (_showDistribution) {
-		cout << hline << "Sampled Distribution of Solutions:" << endl
+	if (_saveSampledDistribution) {
+		fsamples << hline << "Sampled Distribution of Solutions:" << endl
 				<< "Event Counts; Score";
-		cout << "\t";
+		fsamples << "\t";
 //		if (_outputProbabilities) {
 //			cout << "\tProb";
 //		}Input Species tree:
-		cout << "\tnumSamples/" << nSteps << endl;
+		fsamples << "\tnumSamples/" << nSteps << endl;
 		for (auto dis : sampledDistribution) {
 //			cout << "Looking for event count for this map: " << dis.first << endl;
 			EventCount ec = CMM.getEventCount(dis.first);
-			cout << ec << '\t' << dis.first << "\t" << dis.second << endl;
+			fsamples << ec << '\t' << dis.first << "\t" << dis.second << endl;
 		}
-		cout << hline << "FINAL Multiple CophyMap found by Algorithm 1:" << endl;
+		fsamples << hline << "FINAL Multiple CophyMap found by Algorithm 1:" << endl;
 		EventCount ecFinal(CMM.countEvents());
-		cout << CMM << ecFinal << endl << hline << endl;
-		cout << "final CSD: " << CSD(ecFinal) << endl;
+		fsamples << CMM << ecFinal << endl << hline << endl;
+		fsamples << "final CSD: " << CSD(ecFinal) << endl;
+		fsamples.close();
 	}
 	ofstream fmap;
 	fmap.open("best-map-found.txt", std::ofstream::out);
@@ -583,14 +572,13 @@ void Algorithm1(CophyMultiMap& CMM, map<string, int>& sampledDistribution) {
 //	EventCount ecFinal(CMM.countEvents());
 //	cout << CMM << ecFinal << endl << hline << endl;
 //	cout << "final CSD: " << CSD(ecFinal) << endl;
-//	if (_verbose) {
-//		cout << hline << "BEST Multiple CophyMap found by Algorithm 1:" << endl;
-	if (_verbose) {
-		cout << bestPrettyMap.str();
-	}
+	if (!_silent) {
+		cout << hline << "BEST Multiple CophyMap found by Algorithm 1:" << endl;
+		cout << bestPrettyMap.str() << endl;
 		cout << "nCospec,nSegDup,nLoss,cost" << endl;
 		cout << bestEventCount.codivs << ',' << bestEventCount.dups
 				<< ',' << bestEventCount.losses << ',' << bestCost << endl;
+	}
 //		cout << bestEventCount << '\t' << bestCost << '\t' << bestMMap << '\t' << endl;
 //		cout << hline << endl;
 //	}
@@ -946,7 +934,10 @@ string segdupHelp("SegDup Help:\n"
 		"\t-Tinit <float>\n\t\tto supply the initial temperature (default: " + to_string(Tinitial) + ")\n"
 		"\t-d <float>\n\t\tto set the duplication event cost (default: " + to_string(duplicationCost) + ")\n"
 		"\t-l <float>\n\t\tto set the loss event cost (default: " + to_string(lossCost) + ")\n"
-		"\t-o (samples)\n\t\tto show the sampled maps (default: FALSE).\n"
+		"\t-o (probs|samples|trace)\n"
+		"\t\tto output the probabilities of moves (default: FALSE).\n"
+		"\t\tto output the sampled maps (default: FALSE).\n"
+		"\t\tto output the trace of progress (default: FALSE).\n"
 		"\t--sat-spread <float>\n\t\tto set the Simulated Annealing \"spread\" parameter (default: " + to_string(SATempSpread) + ")\n"
 		"\t--sat-decay <float>\n\t\tto set the Simulated Annealing \"decay\" parameter (default: " + to_string(SATempDecay) + ")\n"
 		"\t--verbose\n\t\tto output lots of stuff (default: FALSE);\n"
@@ -976,8 +967,8 @@ int main(int argn, char** argv) {
 			string newick(argv[i]);
 			S = new Tree('s', newick);
 			S->setLabel("S");
-			if (_verbose) {
-				cout << "Input Species tree:" << endl << (*S) << endl;
+			if (!_silent) {
+				cout << "Input Species tree S:" << endl << (*S) << endl;
 			}
 		} else if (!strcmp(argv[i], "-G")) {
 			++numGeneTrees;
@@ -986,13 +977,13 @@ int main(int argn, char** argv) {
 			G.push_back(new Tree('g', newick));
 			Tree *P = G[numGeneTrees-1];
 			P->setLabel("G" + to_string(numGeneTrees));
-			if (_verbose) {
-				cout << "Input Gene tree:" << endl << (*P) << endl;
+			if (!_silent) {
+				cout << "Input Gene tree " << P->getLabel() << ":" << endl << (*P) << endl;
 			}
 			++i;
 			string assoc(argv[i]);
 			NodeMap* A = new NodeMap(S, P, assoc);
-			if (_verbose) {
+			if (!_silent) {
 				cout << "Input Associations:" << endl << (*A);
 			}
 			CophyMap* M = new CophyMap(*A);
@@ -1002,13 +993,13 @@ int main(int argn, char** argv) {
 		} else if (!strcmp(argv[i], "-n")) {
 			++i;
 			nSteps = atoi(argv[i]);
-			if (_verbose) {
+			if (!_silent) {
 				cout << "Setting Number of steps to " << nSteps << endl;
 			}
 		} else if (!strcmp(argv[i], "-d")) {
 			++i;
 			duplicationCost = atof(argv[i]);
-			if (_verbose) {
+			if (!_silent) {
 				cout << "Setting DuplicationCost to " << duplicationCost << endl;
 			}
 			CMM.setDuplicationCost(duplicationCost);
@@ -1016,26 +1007,27 @@ int main(int argn, char** argv) {
 			++i;
 			lossCost = atof(argv[i]);
 			CMM.setLossCost(lossCost);	// TODO Settle on either a global variable for this cost or just the instance variable!
-			if (_verbose) {
+			if (!_silent) {
 				cout << "Setting LossCost to " << lossCost << endl;
 			}
 		} else if (!strcmp(argv[i], "-Tinit")) {
 			++i;
 			Tinitial = atof(argv[i]);
-			if (_verbose) {
+			if (!_silent) {
 				cout << "Setting Initial Temperature to " << Tinitial << endl;
 			}
 		} else if (!strcmp(argv[i], "-o")) {
 			++i;
-			if (!strcmp(argv[i], "probs")) {
-				_outputProbabilities = true;
-			} else if (!strcmp(argv[i], "samples")) {
-				if (_verbose) {
+//			if (!strcmp(argv[i], "probs")) {
+//				_outputProbabilities = true;
+//			} else
+			if (!strcmp(argv[i], "samples")) {
+				if (!_silent) {
 					cout << "Setting Show_Samples to true" << endl;
 				}
-				_showSampledDistribution = true;
+				_saveSampledDistribution = true;
 			} else if (!strcmp(argv[i], "trace")) {
-				if (_verbose) {
+				if (!_silent) {
 					cout << "Setting Save a Trace to true" << endl;
 				}
 				_saveTrace = true;
@@ -1049,7 +1041,7 @@ int main(int argn, char** argv) {
 		} else if (!strcmp(argv[i], "--sat-decay")) {
 			++i;
 			SATempDecay = atof(argv[i]);
-			if (_verbose) {
+			if (!_silent) {
 				cout << "Setting Simulated Annealing \"decay\" parameter to " << SATempDecay << endl;
 			}
 		} else if (!strcmp(argv[i], "--verbose")) {
