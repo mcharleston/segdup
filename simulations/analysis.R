@@ -1,0 +1,17 @@
+dat <- read.csv("results-nH40-nP30-rB2-pJ0.5.csv", header=T)
+
+d <- 10
+l <- 1
+
+par(mfrow=c(1,2))
+
+#compare to Multrec
+with(dat, plot(cost ~ mrCost))
+abline(0,1,col="red")
+with(dat, sum(cost > mrCost))
+with(dat, sum(cost < mrCost))
+with(dat, cost - mrCost)
+
+#compare to true reconciliation
+plot(d*dat$nAllDupEvents+l*dat$nLineageSort, dat$cost)
+abline(0,1,col="red")

@@ -26,6 +26,9 @@
 *.a
 *.lib
 
+# Output files
+*.csv
+
 # Executables
 *.exe
 *.out

@@ -46,14 +46,15 @@ private:
 	int depth;
 	int height;
 	double branchLength;
+	int dupHeight;
 	mutable bool _visited;
 public:
 	Node() : label("*"),
 				parent(nullptr), firstChild(nullptr), sibling(nullptr), associate(nullptr),
-				T(nullptr), depth(-1), height(-1), branchLength(0.0), _visited(false) {}
+				T(nullptr), depth(-1), height(-1), branchLength(0.0), dupHeight(-1), _visited(false) {}
 	Node(std::string str) : label(str),
 				parent(nullptr), firstChild(nullptr), sibling(nullptr), associate(nullptr),
-				T(nullptr), depth(-1), height(-1), branchLength(0.0), _visited(false) {}
+				T(nullptr), depth(-1), height(-1), branchLength(0.0), dupHeight(-1), _visited(false) {}
 	virtual ~Node();
 
 	void addChild(Node* c);

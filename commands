@@ -1,0 +1,8 @@
+cat experiments/guigo_all.txt | xargs ./segdup -n 1000000 -o samples -o trace -Tinit 20 -d 50 -l 1
+
+cat experiments/ybc-case0.txt | xargs ./segdup -o samples -n 100000 -Tinit 10 -Tfinal 10 -d 1 -l 1
+cat experiments/ybc-case0b.txt | xargs ./segdup -o samples -n 100000 -Tinit 10 -Tfinal 10 -d 1 -l 1
+cat experiments/ybc-case0c.txt | xargs ./segdup -o samples -n 100000 -Tinit 10 -Tfinal 10 -d 1 -l 1
+cat experiments/ybc-case0d.txt | xargs ./segdup -o samples -n 100000 -Tinit 10 -Tfinal 10 -d 1 -l 1
+
+cat experiments/test-case1.txt | xargs ./segdup -o samples -n 100000 -Tinit 10 -Tfinal 10 -d 1 -l 1

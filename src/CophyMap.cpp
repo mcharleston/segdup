@@ -6,6 +6,7 @@
  */
 
 #include <assert.h>
+#include <stdexcept>
 #include <stdio.h>
 #include "../utility/appexception.h"
 #include "../utility/debugging.h"
@@ -50,6 +51,7 @@ std::set<pair<Node*, eventType>> CophyMap::calcAvailableNewHosts(Node* p) {
 		DEBUG(cout << "p has parent with node label " << p->parent->getLabel() << endl);
 		top = getHost(p->getParent()); //->getParent()->getAssociate();
 	} else {
+		DEBUG(cout << "p is root" << endl);
 		top = getHost(p)->getTree()->getRoot();
 	}
 	if (p->isLeaf()) {
@@ -86,6 +88,43 @@ std::set<pair<Node*, eventType>> CophyMap::calcAvailableNewHosts(Node* p) {
 	return avail;
 }
 
+int CophyMap::calcDuplicationHeight(Node *p) {
+	/**
+	 * Calculate and return the maximum height of any subtree of this parasite/gene tree on the same host/species node as p.
+	 */
+	bool _debugging(false);
+	Node* h = phi[p];
+	p->dupHeight = 0;
+	DEBUG(cout << "This host/species node (" << h->getLabel() << ") has " << invPhi[h].size() << " occupants." << endl);
+	DEBUG(cout << "This is the map:"<< endl << *this << endl);
+	for (Node* q : invPhi[h]) {
+		DEBUG(cout << q->getLabel() << " is on ");
+		int height = (event[q] == duplication) ? 1 : 0;	// this is probably dodgy because it treats "noevent" and "loss" as "codivergence"
+		while (q->parent != nullptr) {
+			q = q->parent;	// XXX This is a good thing to optimise for speed
+			if (invPhi[h].count(q) > 0) {
+				++height;
+			} else {
+				break;
+			}
+		}
+		DEBUG(cout << h->getLabel() << " and has height " << height << endl);
+		p->dupHeight = max<int>(p->dupHeight, height);
+	}
+	for (Node* q : invPhi[h]) {	// XXX This is about a 2x speedup for small cases
+		q->dupHeight = p->dupHeight;
+	}
+	return p->dupHeight;
+}
+
+int CophyMap::getDuplicationHeight(Node* p) {
+	// XXX THIS is the culprit: in the code I'm not tainting the dupHeight sufficiently
+	if (p->dupHeight < 0) {
+		calcDuplicationHeight(p);
+	}
+	return p->dupHeight;
+}
+
 void CophyMap::checkValidHostOrdering() {
 	std::map<std::string, Node*>& V = P->getVertices();
 	for (auto vpr : V) {
@@ -99,6 +138,21 @@ void CophyMap::checkValidHostOrdering() {
 	}
 }
 
+void CophyMap::clearAllDupHeights(Node *p) {
+	for (Node* c(p->firstChild); c != nullptr; c = c->sibling) {
+		clearAllDupHeights(c);
+	}
+	p->dupHeight = -1;
+}
+
+void CophyMap::clearDupHeightsOnHost(Node* p, Node *h) {
+	for (Node* c(p->firstChild); c != nullptr; c = c->sibling) {
+		if (phi[c] == h) {
+			clearDupHeightsOnHost(c, h);
+		}
+	}
+	p->dupHeight = -1;
+}
 
 // Recall:
 //typedef Node* associationtype;	// host x association type
@@ -147,6 +201,22 @@ std::string CophyMap::describeEvent(eventType e) {
 		default: break;
 	}
 	return "";
+}
+
+void CophyMap::doEarlyReconciliation() {
+	bool _debugging(false);
+	DEBUG(cout << "doEarlyReconciliation" << endl);
+	Node* h = H->getRoot();
+	for (auto pr : P->getVertices()) {
+		Node* p = pr.second;
+		if (p->isLeaf()) {
+			continue;
+		}
+		phi[p] = h;
+		invPhi[h].insert(p);
+	}
+	storeAssociationInfo();
+	DEBUG(cout << "reconciliation is done" << endl);
 }
 
 void CophyMap::doPageReconciliation() {
@@ -219,14 +289,22 @@ bool CophyMap::isValid() {
 	// check all nodes in P are mapped to nodes in H
 	Node* image, *childimage;
 	for (Node* n = P->getRoot(); n != nullptr; n = n->next()) {
-		image = phi.at(n);
+		try {
+			image = phi.at(n);
+		} catch (runtime_error& e) {
+			cerr << e.what();
+		}
 		if (image->getTree() != H) {
 			cerr << "node n=" << n->getLabel() << " is not mapped to the correct tree " << H->getLabel() << endl;
 			return false;
 		}
 		// check no child node is mapped to a node earlier (closer to the root than) the image of the parent (no time travel!)
 		for (Node* c = n->getFirstChild(); c != nullptr; c = c->getSibling()) {
-			childimage = phi.at(c);
+			try {
+				childimage = phi.at(c);
+			} catch (runtime_error& e) {
+				cerr << e.what();
+			}
 			if (H->isAncestralTo(childimage, image)) {
 				cerr << "child node c=" << c->getLabel() << " is mapped ancestrally to its parent n=" << n->getLabel() << endl;
 				return false;
@@ -245,6 +323,7 @@ Node* CophyMap::mapToLCAofChildren(Node* p) {
 //		p->event = codivergence;	// 0 for codivergence normally
 		DEBUG(cout << "This is a leaf: setting image to known associate and returning." << endl);
 		DEBUG(cout << p->getLabel() << " maps to " << phi[p]->getLabel() << endl);
+		invPhi[phi[p]].insert(p);
 		return phi[p];	// return the host/species node
 	}
 	// first, find to which node will p be mapped:
@@ -263,6 +342,7 @@ Node* CophyMap::mapToLCAofChildren(Node* p) {
 		++iter;
 	}
 	phi[p] = lca;
+	invPhi[lca].insert(p);
 	DEBUG(cout << "Associate " << p->getLabel() << " is mapped to " << lca->getLabel() << endl);
 	// now determine the event type:
 	// if all the children of phi[p] are occupied by the children of p then it's a codivergence; else it's duplication.
@@ -288,24 +368,40 @@ Node* CophyMap::mapToLCAofChildren(Node* p) {
 }
 
 void CophyMap::moveToHost(Node* p, Node *h) {
+	bool _debugging(false);
 	try {
-		// have to change the host of p stored in p, the nodemap AND the inversenodemap
+		// have to change the host of p stored in phi, the nodemap AND the inversenodemap
 		// first remove p from the inverseNodeMap of h:
 		Node* currentHost = phi[p];
-		phi[p] = h;
+		clearAllDupHeights(p->T->getRoot());
+//		clearDupHeightsOnHost(p, currentHost);	//p->dupHeight = -1;	// taint this so it must be calculated next time needed.
+		DEBUG(cout << "moveToHost(" << p->getLabel() << "," << h->getLabel() << "): ");
+		phi[p] = h; // XXX is phi, being a map of Node* to Node*, just getting bigger and bigger?
+//		clearDupHeightsOnHost(p, h);	//p->dupHeight = -1;	// taint this so it must be calculated next time needed.
 		invPhi[currentHost].erase(p);
 		invPhi[h].insert(p);
-//		P->getInfo().at(p) = h->getLabel();
+		DEBUG(cout << "{";
+		for (auto a : invPhi[h]) {
+			cout << " " << a->getLabel();
+		}
+		cout << " }" << endl);
+		/**
+		 * XXX Need to check if any codivergence events are added / removed.
+		 *
+		 * XXX Check if any losses have changed
+		 * XXX Check duplication heights have not changed.
+		 */
 	} catch (const exception& e) {
 		cout << e.what();
 	}
 }
 void CophyMap::moveToHost(Node* p, Node *h, eventType e) {
+	// XXX MEMORY LEAK IN HERE? No it isn't :(
 //	DEBUG(cout << "Moving " << p->getLabel() << " from " << eventSymbol[event[p]] << phi[p]->getLabel()
 //			<< " to " << eventSymbol[e] << h->getLabel() << endl);
-	moveToHost(p, h);
 	event[p] = e;
 	storeAssociationInfo(p, h, e);
+	return moveToHost(p, h);
 }
 
 CophyMap& CophyMap::operator=(const CophyMap &other) {

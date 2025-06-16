@@ -43,7 +43,7 @@ NodeMap::NodeMap(initializer_list<pair<Node*, Node*>> leaves) {
 NodeMap::NodeMap(Tree* inH, Tree* inP, string assocStr) : H(inH), P(inP) {
 	// read in associations as node names.  Only works once the trees have been created!
 	// NOTE that the Host and Parasite trees MUST be given in this order. They are the same type.
-	// NOTE too that the associations are written as p:h -- yes this is the other way around gtom above but it's traditional...
+	// NOTE too that the associations are written as p:h -- yes this is the other way around from above but it's traditional...
 	// format:
 	// <assocs> ::= <paraname> ':' <hostname> { ',' <assocs> }
 
