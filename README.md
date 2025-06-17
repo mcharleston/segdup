@@ -34,12 +34,13 @@ The compiled binary may be put anywhere in your directory structure, such as in 
 
 It should be run from command-line / terminal using `segdup` in such a way that the shell can find the executable (e.g. as `~/bin/segdup` or `segdup` if `~/bin` is in your $PATH variable), and arguments as below:
 
-- `?` or `-h`
-  - to print the help message
+* `?` or `-h`
+	* to print the help message
   
 * `-S <newickformatspeciestree>`
-  * Note that the species tree MUST be defined BEFORE the gene trees else the program will crash.
-  * Also note that you MUST put trees in matched quotes if invoking from the command-line.
+	* Note that the species tree MUST be defined BEFORE the gene trees else the program will crash.
+	
+	* Also note that you MUST put trees in matched quotes if invoking from the command-line.
 	
 * `-G <newickformatgenetree> <leafassociations>`
 	- Association list MUST be a quoted string of space-separated pairs such as 'p:A q:B' to mean
