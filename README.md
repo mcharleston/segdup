@@ -34,29 +34,39 @@ The compiled binary may be put anywhere in your directory structure, such as in 
 
 It should be run from command-line / terminal using `segdup` in such a way that the shell can find the executable (e.g. as `~/bin/segdup` or `segdup` if `~/bin` is in your $PATH variable), and arguments as below:
 
-* `?` or `-h`
-	- to print the help message
+- `?` or `-h`
+  - to print the help message
+  
 * `-S <newickformatspeciestree>`
-	- Note that the species tree MUST be defined BEFORE the gene trees else the program will crash.
-	- Also note that you MUST put trees in matched quotes if invoking from the command-line.
+  * Note that the species tree MUST be defined BEFORE the gene trees else the program will crash.
+  * Also note that you MUST put trees in matched quotes if invoking from the command-line.
+	
 * `-G <newickformatgenetree> <leafassociations>`
 	- Association list MUST be a quoted string of space-separated pairs such as 'p:A q:B' to mean
 	- gene p is on species leaf A, and gene q is on species leaf B.
 * `-n <int>`
-	- to supply the number of steps for the main algorithm (default: 1000)
+	- to supply the number of steps for the main algorithm (default: 10000)
+* `'-nfinal <int>`
+	- to set the number of steps to take at the final temperature
 * `-Tinit <float>`
 	- to supply the initial temperature (default: 0.1)
 * `-d <float>`
 	- to set the duplication event cost (default: 10.0)
 * `-l <float>`
-	- `to set the loss event cost (default: 1.0)
-* `-o (probs|samples|trace)`
-	- to output the sampled maps (default: FALSE): creates new file `segdup-samples.txt` for this.
-	- to output the trace of progress (default: FALSE): creates new file `segdup-trace.csv` for this
+	- to set the loss event cost (default: 1.0)
+* `-o (samples|final|interval <int>|trace)`
+
+	- *samples* to output the sampled maps (default: FALSE): creates new file `segdup-samples.txt` for this.
+	
+	- *final* to save the map at the final temperature
+	- *interval* when writing files, to store every <interval>-th one
+	- *trace* to output the trace of progress (default: FALSE): creates new file `segdup-trace.csv` for this
 * `--sat-spread <float>`
 	- to set the Simulated Annealing "spread" parameter (default: 100)
 * `--sat-decay <float>`
 	- to set the Simulated Annealing "decay" parameter (default: 4)
+* `--seed <int>`
+	- to set the (pseudo-)random number generator seed (default: from the system clock)
 * `--verbose`
 	- to output lots of stuff (default: FALSE)
 * `--silent`
