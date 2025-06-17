@@ -43,13 +43,20 @@ public:
 	CophyMap(const CophyMap &other);
 
 	std::set<std::pair<Node*, eventType> > calcAvailableNewHosts(Node* p);
+	int calcDuplicationHeight(Node *p);
 
 	void checkValidHostOrdering();
+
+	void clearAllDupHeights(Node *p);
+	void clearDupHeightsOnHost(Node* p, Node *h);
 
 	EventCount countEvents();
 	std::string describeEvent(eventType e);
 	inline std::string describeEvent(Node *p) { return describeEvent(event[p]); }
+	void doEarlyReconciliation();
 	void doPageReconciliation();
+
+	int getDuplicationHeight(Node* p);
 
 	eventType getEvent(Node* p) { return event.at(p); }
 	Node* getHost(Node* p) { return phi[p]; }
