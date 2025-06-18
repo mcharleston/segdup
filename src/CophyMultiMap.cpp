@@ -34,7 +34,7 @@ int CophyMultiMap::calcCombinedDuplicationHeight(Node *h) {
 		DEBUG(cout << "calculating inverse map since it is empty" << endl);
 		calcInverseMap();	// TODO find out why this isn't being updated properly by moving p-nodes around.
 		// XXX I've turned OFF the test to see if the invMap.size() is zero and it SEEMS to be working.. (MAC 2022/12/05)
-//	}
+	}
 	int dupHeight(0);
 	for (Node* p : invMap[h]) {
 		DEBUG(cout << p->getLabel() << " is on host " << h->getLabel() << endl);

@@ -62,7 +62,7 @@ extern unsigned seed;
 
 std::ofstream summaryfile;
 
-double lossCost(defLossCost);			// XXX
+double lossCost(defLossCost);						// XXX
 double duplicationCost(defDuplicationCost);	// XXX MAGIC number!
 									//
 namespace segdup {
@@ -765,6 +765,7 @@ void Algorithm2(CophyMultiMap& CMM, vector<DupMove*> moves, vector<double> probs
 			}
 	//		DEBUG(cout << nei.getLabel() << '\t' << nei.getScore() << endl);
 		}
+		oldEC = ec;
 	}
 	cout << endl;
 	if (_showSampledDistribution) {
@@ -1166,6 +1167,7 @@ string segdupHelp("SegDup Help:\n"
 		"\t-nfinal <float>\n\t\tto supply the number of steps at the final temperature (default value " + to_string(nFinal) + ")\n"
 		"\t--seed <int>\n\t\tto set the random number generator seed\n"
 	);
+
 int main(int argn, char** argv) {
 	bool _debugging(false);
 	if (argn <= 1) {
@@ -1191,7 +1193,9 @@ int main(int argn, char** argv) {
 			string newick(argv[i]);
 			S = new Tree('s', newick);
 			S->setLabel("S");
-			cout << "Input Species tree:" << endl << (*S) << endl;
+			if (_verbose) {
+				cout << "Input Species tree:" << endl << (*S) << endl;
+			}
 		} else if (!strcmp(argv[i], "-G")) {
 			++i;
 			string newick(argv[i]);
@@ -1206,11 +1210,15 @@ int main(int argn, char** argv) {
 			G.push_back(new Tree('g', newick));
 			Tree *P = G[numGeneTrees-1];
 			P->setLabel("G" + to_string(numGeneTrees));
-			cout << "Input Gene tree:" << endl << (*P) << endl;
+			if (_verbose) {
+				cout << "Input Gene tree:" << endl << (*P) << endl;
+			}
 			++i;
 			string assoc(argv[i]);
 			NodeMap* A = new NodeMap(S, P, assoc);
-			cout << "Input Associations:" << endl << (*A);
+			if (_verbose) {
+				cout << "Input Associations:" << endl << (*A);
+			}
 			CophyMap* M = new CophyMap(*A);
 			P->setInfo(M->getInfo());
 			P->setShowInfo(true);
@@ -1218,11 +1226,15 @@ int main(int argn, char** argv) {
 		} else if (!strcmp(argv[i], "-n")) {
 			++i;
 			nSteps = atoi(argv[i]);
-			cout << "Setting Number of steps to " << nSteps << endl;
+			if (_verbose) {
+				cout << "Setting Number of steps to " << nSteps << endl;
+			}
 		} else if (!strcmp(argv[i], "-d")) {
 			++i;
 			duplicationCost = atof(argv[i]);
-			cout << "Setting DuplicationCost to " << duplicationCost << endl;
+			if (_verbose) {
+				cout << "Setting DuplicationCost to " << duplicationCost << endl;
+			}
 			CMM.setDuplicationCost(duplicationCost);
 		} else if (!strcmp(argv[i], "-l")) {
 			++i;
