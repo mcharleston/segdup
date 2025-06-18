@@ -259,7 +259,7 @@ ggplot(data=means) + geom_point(aes(rB-0.05,sdTime,col="black")) +
 	geom_point(aes(rB,lmeans$sdTime,col="red")) + 
 	geom_errorbar(aes(rB,ymin=lmeans$sdTime-2*lsds$sdTime,ymax=lmeans$sdTime+2*lsds$sdTime,col="red"),width=0.1) +
 	geom_point(aes(rB+0.05,(mrTime+lmeans$mrTime)/2,colour="blue")) +
-	geom_errorbar(aes(rB+0.05,ymin=(mrTime+lmeans$mrTime)/2-2*(sds$mrTime+lsds$mrTime)/2/sqrt(2),ymax=(mrTime+lmeans$mrTime)/2+2*(sds$mrTime+lsds$mrTime)/2/sqrt(2),colour="blue"),width=0.1) + 
+	geom_errorbar(aes(rB+0.05,ymin=pmax(0,(mrTime+lmeans$mrTime)/2-2*(sds$mrTime+lsds$mrTime)/2/sqrt(2)),ymax=(mrTime+lmeans$mrTime)/2+2*(sds$mrTime+lsds$mrTime)/2/sqrt(2),colour="blue"),width=0.1) + 
 	scale_x_continuous(breaks=seq(1,5,by=1)) +
 	scale_colour_manual(values = c('black','red','blue'), breaks=c('black','red','blue'),labels = c(bquote(segdup~(10^4)),bquote(segdup~(10^5)),'MultRec')) +
 	theme(legend.title=element_blank(), legend.position = c(0.05,0.95), legend.justification = c("left", "top"), legend.box.just = "right", legend.margin = margin(6, 6, 6, 6)) + 
@@ -322,7 +322,7 @@ ggplot(data=means) + geom_point(aes(pJ-0.01,sdTime,col="black")) +
 	geom_point(aes(pJ,lmeans$sdTime,col="red")) + 
 	geom_errorbar(aes(pJ,ymin=lmeans$sdTime-2*lsds$sdTime,ymax=lmeans$sdTime+2*lsds$sdTime,col="red"),width=0.02) +
 	geom_point(aes(pJ+0.01,(mrTime+lmeans$mrTime)/2,colour="blue")) +
-	geom_errorbar(aes(pJ+0.01,ymin=(mrTime+lmeans$mrTime)/2-2*(sds$mrTime+lsds$mrTime)/2/sqrt(2),ymax=(mrTime+lmeans$mrTime)/2+2*(sds$mrTime+lsds$mrTime)/2/sqrt(2),colour="blue"),width=0.02) + 
+	geom_errorbar(aes(pJ+0.01,ymin=pmax(0,(mrTime+lmeans$mrTime)/2-2*(sds$mrTime+lsds$mrTime)/2/sqrt(2)),ymax=(mrTime+lmeans$mrTime)/2+2*(sds$mrTime+lsds$mrTime)/2/sqrt(2),colour="blue"),width=0.02) + 
 	scale_x_continuous(breaks=seq(0,1,by=0.2)) +
 	scale_colour_manual(values = c('black','red','blue'), breaks=c('black','red','blue'),labels = c(bquote(segdup~(10^4)),bquote(segdup~(10^5)),'MultRec')) +
 	theme(legend.title=element_blank(), legend.position = c(0.05,0.95), legend.justification = c("left", "top"), legend.box.just = "right", legend.margin = margin(6, 6, 6, 6)) + 
