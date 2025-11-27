@@ -178,6 +178,10 @@ try {
 			child = sib;
 		}
 		eat(')');
+		if (isString()) {
+			v->setLabel(getString());
+			advance();
+		}
 		ignore(';');
 	} else if (isString()) {
 //		Node* leaf = new Node();
