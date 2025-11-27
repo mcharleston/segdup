@@ -1,5 +1,7 @@
 # segdup
 
+[![DOI](https://zenodo.org/badge/557575963.svg)](https://doi.org/10.5281/zenodo.15770509)
+
 ## Introduction 
 
 This C++ program implements our probabilistic algorithm for solving the problem gene tree - species tree reconciliation in the presence of segmental duplications.
