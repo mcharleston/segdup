@@ -292,6 +292,18 @@ int main(int argn, char** argv) {
 			if (!_silent) {
 				cout << "Input Species tree S:" << endl << (*S) << endl;
 			}
+		} else if (!strcmp(argv[i], "-Sfile")) {
+			++i;
+			ifstream sfile(argv[i]);
+			string newick;
+			getline(sfile, newick);
+			sfile.close();
+
+			S = new Tree('s', newick);
+			S->setLabel("S");
+			if (!_silent) {
+				cout << "Input Species tree S:" << endl << (*S) << endl;
+			}
 		} else if (!strcmp(argv[i], "-G")) {
 			++i;
 			string newick(argv[i]);
@@ -319,6 +331,38 @@ int main(int argn, char** argv) {
 			P->setInfo(M->getInfo());
 			P->setShowInfo(true);
 			CMM.addCophyMap(M);
+		} else if (!strcmp(argv[i], "-Gfile")) {
+			++i;
+			string newick, assoc;
+			ifstream gfile(argv[i]);
+
+			while (getline(gfile, newick)) {
+				if (newick[0] != '(') {
+					cerr << "WARNING: Expecting a non-trivial Newick-format tree here, but got this:\n\t"
+							<< newick
+							<< "\nSegDup is skipping this argument and the next, which should be a set of associations.\n";
+					getline(gfile, newick);	// skip this AND the next argument
+					continue;	// ... and go on to the next argument.  This isn't a non-trivial tree.
+				}
+				++numGeneTrees;
+				G.push_back(new Tree('g', newick));
+				Tree *P = G[numGeneTrees-1];
+				P->setLabel("G" + to_string(numGeneTrees));
+				if (!_silent) {
+					cout << "Input Gene tree " << P->getLabel() << ":" << endl << (*P) << endl;
+				}
+				getline(gfile, assoc);
+				NodeMap* A = new NodeMap(S, P, assoc);
+				if (!_silent) {
+					cout << "Input Associations:" << endl << (*A);
+				}
+				CophyMap* M = new CophyMap(*A);
+				P->setInfo(M->getInfo());
+				P->setShowInfo(true);
+				CMM.addCophyMap(M);
+			}
+
+			gfile.close();
 		} else if (!strcmp(argv[i], "-n")) {
 			++i;
 			nSteps = atoi(argv[i]);
